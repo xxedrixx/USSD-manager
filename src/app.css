@@ -1,0 +1,61 @@
+:root {
+    --primary-color: #6200ea;
+    --secondary-color: #03dac6;
+    --background-color: #ffffff;
+    --surface-color: #ffffff;
+    --error-color: #b00020;
+    --on-primary: #ffffff;
+    --on-secondary: #000000;
+    --on-background: #000000;
+    --on-surface: #000000;
+    --on-error: #ffffff;
+
+    --font-family: 'Roboto', sans-serif;
+    --radius: 8px;
+    --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    --elevation-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #bb86fc;
+        --secondary-color: #03dac6;
+        --background-color: #121212;
+        --surface-color: #1e1e1e;
+        --error-color: #cf6679;
+        --on-primary: #000000;
+        --on-secondary: #000000;
+        --on-background: #ffffff;
+        --on-surface: #ffffff;
+        --on-error: #000000;
+    }
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--on-background);
+    -webkit-font-smoothing: antialiased;
+    padding-top: env(safe-area-inset-top);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 0;
+    font-weight: 500;
+}
+
+input,
+button {
+    font-family: inherit;
+}
