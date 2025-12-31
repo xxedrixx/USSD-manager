@@ -14,18 +14,34 @@
 <div class="tabs-container">
     <div class="tabs">
         {#each carriers as carrier}
-            <button
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
+            <div
                 class="tab {selectedCarrierId === carrier.id ? 'active' : ''}"
                 on:click={() => selectCarrier(carrier.id)}
                 style="--active-color: {carrier.color ||
                     'var(--primary-color)'}"
+                role="button"
+                tabindex="0"
             >
                 {#if carrier.logo}
                     <div class="logo-placeholder">{carrier.logo}</div>
                 {/if}
                 <span class="name">{carrier.name}</span>
-            </button>
+                {#if selectedCarrierId === carrier.id}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <span
+                        class="close-btn"
+                        on:click|stopPropagation={() =>
+                            dispatch("remove", carrier.id)}>×</span
+                    >
+                {/if}
+            </div>
         {/each}
+        <button class="add-tab-btn" on:click={() => dispatch("add")}>
+            +
+        </button>
     </div>
 </div>
 
@@ -70,9 +86,7 @@
     }
 
     .tab.active {
-        background: var(
-            --active-color
-        ); /* Fallback or specific carrier color bg? */
+        background: var(--active-color);
         background: rgba(0, 0, 0, 0.05); /* Lighter background */
         color: var(--active-color);
         border-color: var(--active-color);
@@ -94,5 +108,32 @@
         align-items: center;
         font-size: 0.8rem;
         font-weight: bold;
+    }
+
+    .close-btn {
+        background: transparent;
+        border: none;
+        color: inherit;
+        font-weight: bold;
+        margin-left: 8px;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 0 4px;
+        opacity: 0.8;
+    }
+
+    .add-tab-btn {
+        background: rgba(0, 0, 0, 0.1);
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        color: #666;
+        cursor: pointer;
+        flex-shrink: 0;
     }
 </style>

@@ -8,6 +8,8 @@
     import ExecutionDialog from "./components/ExecutionDialog.svelte";
     import CarrierTabs from "./components/CarrierTabs.svelte";
     import LanguageSwitcher from "./components/LanguageSwitcher.svelte";
+    import PromptModal from "./components/PromptModal.svelte";
+    import ConfirmModal from "./components/ConfirmModal.svelte";
 
     let codes = [];
     let carriers = [];
@@ -19,6 +21,17 @@
     let isEditMode = false;
     let isExecutionOpen = false;
     let executionCode = "";
+
+    // Dialog States
+    let isPromptOpen = false;
+    let promptTitle = "";
+    let promptCallback = null;
+    let promptValue = "";
+
+    let isConfirmOpen = false;
+    let confirmTitle = "";
+    let confirmMessage = "";
+    let confirmCallback = null;
 
     let currentCode = {
         title: "",
@@ -34,18 +47,6 @@
         if (initialized) {
             await refreshData();
             if (carriers.length > 0) selectedCarrierId = carriers[0].id;
-        } else {
-            // Mock for browser dev
-            carriers = [
-                { id: 1, name: "Safaricom", color: "#00c853", logo: "S" },
-                { id: 2, name: "Airtel", color: "#ff0000", logo: "A" },
-                { id: 99, name: "General", color: "#6200ea", logo: "G" },
-            ];
-            folders = [
-                { id: 1, name: "General", icon: "📁" },
-                { id: 2, name: "Banking", icon: "🏦" },
-            ];
-            selectedCarrierId = 1;
         }
     });
 
@@ -59,13 +60,40 @@
         selectedCarrierId = event.detail;
     }
 
+    function handleAddCarrier() {
+        promptTitle = $T.add_carrier || "Carrier Name:";
+        promptValue = "";
+        promptCallback = async (name) => {
+            if (name) {
+                await dbService.addCarrier(name);
+                await refreshData();
+                if (carriers.length > 0)
+                    selectedCarrierId = carriers[carriers.length - 1].id;
+            }
+        };
+        isPromptOpen = true;
+    }
+
+    function handleRemoveCarrier(event) {
+        const id = event.detail;
+        confirmTitle = $T.delete || "Delete";
+        confirmMessage = $T.confirm_delete || "Delete this carrier?";
+        confirmCallback = async () => {
+            await dbService.deleteCarrier(id);
+            await refreshData();
+            if (selectedCarrierId === id) {
+                selectedCarrierId = carriers[0]?.id || null;
+            }
+        };
+        isConfirmOpen = true;
+    }
+
     function openAddModal() {
-        isEditMode = false;
         currentCode = {
             title: "",
             code: "",
             carrierId: selectedCarrierId,
-            folderId: folders[0]?.id || 1,
+            folderId: folders.length > 0 ? folders[0].id : null,
             contactName: "",
             contactNumber: "",
         };
@@ -142,8 +170,6 @@
         const matchesSearch =
             c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             c.code.includes(searchQuery);
-        // For general carrier (99), maybe show everywhere? Or just strict filtering?
-        // Strict filtering for now as requested "tabs to organize".
         const matchesCarrier = c.carrier_id === selectedCarrierId;
         return matchesSearch && matchesCarrier;
     });
@@ -180,6 +206,8 @@
         {carriers}
         {selectedCarrierId}
         on:select={handleCarrierSelect}
+        on:add={handleAddCarrier}
+        on:remove={handleRemoveCarrier}
     />
 
     <div class="content">
@@ -230,6 +258,28 @@
         code={executionCode}
         on:close={() => (isExecutionOpen = false)}
         on:execute={onExecute}
+    />
+
+    <PromptModal
+        isOpen={isPromptOpen}
+        title={promptTitle}
+        bind:value={promptValue}
+        on:close={() => (isPromptOpen = false)}
+        on:confirm={(e) => {
+            if (promptCallback) promptCallback(e.detail);
+            isPromptOpen = false;
+        }}
+    />
+
+    <ConfirmModal
+        isOpen={isConfirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        on:close={() => (isConfirmOpen = false)}
+        on:confirm={() => {
+            if (confirmCallback) confirmCallback();
+            isConfirmOpen = false;
+        }}
     />
 </main>
 
