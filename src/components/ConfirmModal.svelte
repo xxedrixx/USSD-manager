@@ -35,12 +35,12 @@
             <p>{message}</p>
 
             <div class="actions">
-                <button class="cancel-btn" on:click={close}
-                    >{$T.cancel || "Cancel"}</button
-                >
-                <button class="delete-btn" on:click={confirm}
-                    >{$T.delete || "Delete"}</button
-                >
+                <button class="m3-button cancel-btn" on:click={close}>
+                    {$T.cancel || "Cancel"}
+                </button>
+                <button class="m3-button delete-btn" on:click={confirm}>
+                    {$T.delete || "Delete"}
+                </button>
             </div>
         </div>
     </div>
@@ -53,54 +53,64 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000;
+        z-index: 2000;
+        backdrop-filter: blur(4px);
     }
 
     .modal {
-        background: var(--surface-color);
+        background: var(--md-sys-color-surface);
         padding: 24px;
-        border-radius: var(--radius);
+        border-radius: var(--radius-l);
         width: 90%;
-        max-width: 400px;
-        box-shadow: var(--elevation-2);
+        max-width: 320px;
+        border: 1px solid var(--md-sys-color-outline);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        animation: modal-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modal-pop {
+        from {
+            transform: scale(0.9) translateY(10px);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
     }
 
     h2 {
         margin-bottom: 12px;
-        color: var(--primary-color);
+        color: var(--md-sys-color-primary);
         font-size: 1.25rem;
+        font-weight: 700;
     }
 
     p {
         margin-bottom: 24px;
-        color: #666;
+        color: var(--md-sys-color-on-surface-variant);
+        line-height: 1.5;
     }
 
     .actions {
         display: flex;
         justify-content: flex-end;
-        gap: 12px;
-    }
-
-    button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
+        gap: 8px;
     }
 
     .cancel-btn {
         background: transparent;
-        color: #666;
+        color: var(--md-sys-color-primary);
+        border: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .delete-btn {
-        background: #d32f2f; /* Red */
+        background: #d32f2f;
         color: white;
+        border: 1px solid var(--md-sys-color-outline-variant);
     }
 </style>

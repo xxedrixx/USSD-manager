@@ -4,36 +4,46 @@
 
 <div class="language-switcher">
     <button class:active={$locale === "fr"} on:click={() => setLocale("fr")}
-        >FR</button
+        >🇫🇷 <span class="label">FR</span></button
     >
     <button class:active={$locale === "mg"} on:click={() => setLocale("mg")}
-        >MG</button
+        >🇲🇬 <span class="label">MG</span></button
     >
 </div>
 
 <style>
     .language-switcher {
         display: flex;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        padding: 2px;
+        background: var(--md-sys-color-surface-variant);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 24px;
+        padding: 4px;
+        gap: 4px;
+        transition: var(--transition-standard);
     }
 
     button {
         background: none;
         border: none;
-        color: var(--on-primary);
-        padding: 4px 8px;
-        font-size: 0.8rem;
+        color: var(--md-sys-color-on-surface-variant);
+        padding: 6px 12px;
+        font-size: 0.9rem;
         cursor: pointer;
-        border-radius: 18px;
-        opacity: 0.7;
-        font-weight: bold;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: var(--transition-standard);
+        font-weight: 600;
+    }
+
+    .label {
+        font-size: 0.75rem;
     }
 
     button.active {
-        background: rgba(255, 255, 255, 0.9);
-        color: var(--primary-color);
-        opacity: 1;
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 </style>
