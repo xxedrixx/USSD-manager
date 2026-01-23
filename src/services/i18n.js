@@ -2,7 +2,7 @@ import { writable, get } from 'svelte/store';
 
 const translations = {
     fr: {
-        app_title: "Gestionnaire USSD",
+        app_title: "USSD",
         search_placeholder: "Rechercher...",
         add_code: "Ajouter un code",
         edit_code: "Modifier le code",
@@ -37,7 +37,7 @@ const translations = {
         }
     },
     mg: {
-        app_title: "Mpitantana USSD",
+        app_title: "USSD",
         search_placeholder: "Hitady...",
         add_code: "Hampiditra kaody",
         edit_code: "Hanova kaody",

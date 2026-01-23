@@ -30,11 +30,11 @@
     };
 
     const categories = [
-        { id: "ALL", icon: "home", label: "All" },
+        { id: "ALL", icon: "home", label: "General" },
         { id: "SMS", icon: "sms", label: "SMS" },
-        { id: "CALL", icon: "call", label: "Call" },
+        { id: "CALL", icon: "call", label: "Appel" },
         { id: "INTERNET", icon: "wifi", label: "Data" },
-        { id: "FAVORITES", icon: "star", label: "Favs" },
+        { id: "FAVORITES", icon: "favorite", label: "Favs" },
     ];
 
     onMount(async () => {

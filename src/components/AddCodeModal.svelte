@@ -15,7 +15,7 @@
     const categories = [
         { id: "ALL", icon: "home", label: "General" },
         { id: "SMS", icon: "sms", label: "SMS" },
-        { id: "CALL", icon: "call", label: "Call" },
+        { id: "CALL", icon: "call", label: "Appel" },
         { id: "INTERNET", icon: "wifi", label: "Data" },
     ];
 
@@ -63,7 +63,7 @@
                     id="title"
                     type="text"
                     bind:value={codeData.title}
-                    placeholder="e.g. Check Balance"
+                    placeholder="Solde"
                 />
             </div>
 
@@ -73,7 +73,7 @@
                     id="code"
                     type="tel"
                     bind:value={codeData.code}
-                    placeholder="e.g. *123#"
+                    placeholder="*123#"
                 />
             </div>
 
