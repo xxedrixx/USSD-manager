@@ -54,7 +54,7 @@ const translations = {
         no_codes_added: "Tsy mbola misy kaody nampidirina.",
         no_codes_found: "Tsy nahitana kaody tamin'ity sokajy ity.",
         categories: {
-            all: "Samihafa",
+            all: "Rehetra",
             sms: "SMS",
             call: "Antso",
             internet: "Data",

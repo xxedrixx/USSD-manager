@@ -1,0 +1,1 @@
+import{W as e}from"./index-Dba-6no1.js";import"./index-CCMqkOrr.js";class s extends e{constructor(){super({name:"CallNumber",platforms:["web"]})}showFilePicker(o){return Promise.reject("Method not implemented")}}export{s as CallNumber};

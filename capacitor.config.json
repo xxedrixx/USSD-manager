@@ -1,5 +1,5 @@
 {
-  "appId": "com.example.ussd",
+  "appId": "com.ussd.manager",
   "appName": "USSD",
   "webDir": "dist"
 }

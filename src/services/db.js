@@ -35,9 +35,9 @@ class DatabaseService {
 
     seedMockData() {
         this.mockData.codes = [
-            { id: 1, title: 'Check Balance', code: '*123#', category: 'ALL', is_favorite: 1 },
-            { id: 2, title: 'Buy Data', code: '*141*1#', category: 'INTERNET', is_favorite: 0 },
-            { id: 3, title: 'Send Money', code: '*150#', category: 'CALL', is_favorite: 0 }
+            { id: 1, title: 'Yellow 100 Yas', code: '#322*67#', category: 'SMS', is_favorite: 1 },
+            { id: 2, title: 'MLay 500 Airtel', code: '*100*500#', category: 'SMS', is_favorite: 0 },
+            { id: 3, title: 'Solde Orange', code: '#321#', category: 'ALL', is_favorite: 0 }
         ];
     }
 
