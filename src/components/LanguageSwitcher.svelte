@@ -4,20 +4,18 @@
 
 <div class="language-switcher">
     <button class:active={$locale === "fr"} on:click={() => setLocale("fr")}>
-        <svg class="flag" viewBox="0 0 3 2" width="20" height="14">
+        <svg class="flag" viewBox="0 0 3 2" width="24" height="16">
             <rect width="1" height="2" fill="#002395" />
             <rect width="1" height="2" x="1" fill="#fff" />
             <rect width="1" height="2" x="2" fill="#ED2939" />
         </svg>
-        <span class="label">FR</span>
     </button>
     <button class:active={$locale === "mg"} on:click={() => setLocale("mg")}>
-        <svg class="flag" viewBox="0 0 3 2" width="20" height="14">
+        <svg class="flag" viewBox="0 0 3 2" width="24" height="16">
             <rect width="1" height="2" fill="#fff" />
             <rect width="2" height="1" x="1" fill="#FC3D32" />
             <rect width="2" height="1" x="1" y="1" fill="#007E3A" />
         </svg>
-        <span class="label">MG</span>
     </button>
 </div>
 
@@ -36,24 +34,18 @@
         background: none;
         border: none;
         color: var(--md-sys-color-on-surface-variant);
-        padding: 6px 10px;
-        font-size: 0.9rem;
+        padding: 4px 8px;
         cursor: pointer;
         border-radius: 20px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
         transition: var(--transition-standard);
-        font-weight: 600;
     }
 
     .flag {
         border-radius: 2px;
-        box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1);
-    }
-
-    .label {
-        font-size: 0.75rem;
+        box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2);
     }
 
     button.active {

@@ -8,9 +8,9 @@
     --md-sys-color-on-secondary: #FFFFFF;
     --md-sys-color-secondary-container: #E8DEF8;
     --md-sys-color-on-secondary-container: #1D192B;
-    --md-sys-color-surface: rgba(255, 255, 255, 0.4);
+    --md-sys-color-surface: rgba(255, 255, 255, 0.9);
     --md-sys-color-on-surface: #1C1B1F;
-    --md-sys-color-surface-variant: rgba(231, 224, 236, 0.3);
+    --md-sys-color-surface-variant: rgba(231, 224, 236, 0.8);
     --md-sys-color-on-surface-variant: #49454F;
     --md-sys-color-outline: #79747E;
     --md-sys-color-outline-variant: #CAC4D0;
@@ -24,8 +24,8 @@
     --radius-l: 16px;
     --radius-xl: 28px;
 
-    --glass-blur: blur(24px);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+    --glass-blur: blur(8px);
+    --glass-border: 1px solid rgba(0, 0, 0, 0.1);
 
     --transition-standard: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
