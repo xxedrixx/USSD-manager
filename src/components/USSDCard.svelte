@@ -23,7 +23,7 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="m3-card glass card">
+<div class="m3-card glass current-card">
     <div class="header">
         <div
             class="info"
@@ -43,8 +43,13 @@
                 on:click|stopPropagation={handleFavorite}
                 title="Favorite"
             >
-                <span class="material-symbols-outlined">
-                    {code.is_favorite ? "star" : "star"}
+                <span
+                    class="material-symbols-outlined"
+                    style={code.is_favorite
+                        ? "font-variation-settings: 'FILL' 1"
+                        : ""}
+                >
+                    favorite
                 </span>
             </button>
             <button
@@ -124,7 +129,7 @@
     }
 
     .icon-btn.active {
-        color: #ffb300; /* M3 Gold-ish for stars */
+        color: #e91e63; /* M3 Heart Pink/Red */
     }
 
     .delete-btn:hover {

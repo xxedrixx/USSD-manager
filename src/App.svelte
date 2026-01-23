@@ -156,16 +156,16 @@
 </script>
 
 <main>
-    <header class="glass">
+    <header class="glass sticky-header">
         <div class="header-top">
-            <h1>{$T.app_title || "USSD Manager"}</h1>
+            <h1>{$T.app_title || "USSD"}</h1>
             <LanguageSwitcher />
         </div>
-        <div class="search-bar m3-card glass">
+        <div class="search-container m3-card glass">
             <span class="material-symbols-outlined">search</span>
             <input
                 type="text"
-                placeholder={$T.search_placeholder || "Search codes..."}
+                placeholder={$T.search_placeholder || "Search..."}
                 bind:value={searchQuery}
             />
         </div>
@@ -256,7 +256,7 @@
         top: 0;
         z-index: 100;
         background-color: var(--md-sys-color-background);
-        border-bottom: var(--glass-border);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
     }
 
     .header-top {
@@ -267,20 +267,31 @@
     }
 
     h1 {
-        font-size: 1.5rem;
-        font-weight: 600;
+        font-size: 1.75rem;
+        font-weight: 700;
         color: var(--md-sys-color-primary);
+        letter-spacing: -0.5px;
     }
 
-    .search-bar {
+    .search-container {
         display: flex;
         align-items: center;
         gap: 12px;
         padding: 8px 16px;
         border-radius: var(--radius-xl);
+        border: 1px solid var(--md-sys-color-outline);
+        background-color: var(--md-sys-color-surface-variant) !important;
+        transition: var(--transition-standard);
     }
 
-    .search-bar input {
+    .search-container:focus-within {
+        border-color: var(--md-sys-color-primary);
+        border-width: 2px;
+        background-color: var(--md-sys-color-surface) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-container input {
         flex: 1;
         border: none;
         background: transparent;
@@ -291,11 +302,13 @@
 
     .content {
         padding: 16px;
+        padding-bottom: 120px; /* Space for bottom island */
     }
 
     .grid {
         display: flex;
         flex-direction: column;
+        gap: 8px;
     }
 
     .empty-state {
@@ -317,15 +330,15 @@
     .fab {
         position: fixed;
         bottom: 100px;
-        right: 24px;
+        right: 20px;
         width: 56px;
         height: 56px;
         border-radius: 16px;
         display: flex;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
+        z-index: 1000;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        z-index: 90;
         border: none;
         cursor: pointer;
         padding: 0;
