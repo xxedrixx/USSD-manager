@@ -102,6 +102,34 @@
         isConfirmOpen = true;
     }
 
+    let draggingId = null;
+
+    function handleDragStart(id) {
+        draggingId = id;
+    }
+
+    async function handleDrop(targetId) {
+        if (!draggingId || draggingId === targetId) return;
+
+        const draggedIndex = codes.findIndex((c) => c.id === draggingId);
+        const targetIndex = codes.findIndex((c) => c.id === targetId);
+
+        if (draggedIndex === -1 || targetIndex === -1) return;
+
+        const newCodes = [...codes];
+        const [draggedItem] = newCodes.splice(draggedIndex, 1);
+        newCodes.splice(targetIndex, 0, draggedItem);
+
+        // Update local state first for immediate feedback
+        codes = newCodes;
+        draggingId = null;
+
+        // Persist order to DB
+        for (let i = 0; i < codes.length; i++) {
+            await dbService.updateOrder(codes[i].id, i);
+        }
+    }
+
     function handleDial(event) {
         const code = event.detail.code || event.detail;
         const codeObj = typeof code === "string" ? { code: code } : code;
@@ -189,13 +217,23 @@
         {:else}
             <div class="grid">
                 {#each filteredCodes as code (code.id)}
-                    <USSDCard
-                        {code}
-                        on:dial={handleDial}
-                        on:favorite={handleFavorite}
-                        on:edit={() => openEditModal(code)}
-                        on:delete={handleDelete}
-                    />
+                    <div
+                        draggable="true"
+                        on:dragstart={() => handleDragStart(code.id)}
+                        on:dragover|preventDefault
+                        on:drop={() => handleDrop(code.id)}
+                        class="draggable-wrapper"
+                        class:dragging={draggingId === code.id}
+                        role="listitem"
+                    >
+                        <USSDCard
+                            {code}
+                            on:dial={handleDial}
+                            on:favorite={handleFavorite}
+                            on:edit={() => openEditModal(code)}
+                            on:delete={handleDelete}
+                        />
+                    </div>
                 {/each}
             </div>
         {/if}
@@ -309,6 +347,20 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+    }
+
+    .draggable-wrapper {
+        transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+        cursor: grab;
+    }
+
+    .draggable-wrapper:active {
+        cursor: grabbing;
+    }
+
+    .dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
     }
 
     .empty-state {

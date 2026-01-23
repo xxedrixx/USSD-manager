@@ -49,7 +49,8 @@ class DatabaseService {
             code TEXT NOT NULL,
             category TEXT DEFAULT 'ALL',
             is_favorite INTEGER DEFAULT 0,
-            usage_count INTEGER DEFAULT 0
+            usage_count INTEGER DEFAULT 0,
+            display_order INTEGER DEFAULT 0
         );
         `;
         await this.db.execute(schema);
@@ -62,8 +63,8 @@ class DatabaseService {
     }
 
     async getCodes() {
-        if (this.isWeb) return [...this.mockData.codes];
-        const result = await this.db.query("SELECT * FROM ussd_codes ORDER BY is_favorite DESC, title ASC");
+        if (this.isWeb) return [...this.mockData.codes].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+        const result = await this.db.query("SELECT * FROM ussd_codes ORDER BY display_order ASC, is_favorite DESC, title ASC");
         return result.values;
     }
 
@@ -106,6 +107,15 @@ class DatabaseService {
             return;
         }
         return await this.db.run("UPDATE ussd_codes SET is_favorite = ? WHERE id = ?", [isFavorite ? 1 : 0, id]);
+    }
+
+    async updateOrder(id, order) {
+        if (this.isWeb) {
+            const code = this.mockData.codes.find(c => c.id === id);
+            if (code) code.display_order = order;
+            return;
+        }
+        return await this.db.run("UPDATE ussd_codes SET display_order = ? WHERE id = ?", [order, id]);
     }
 }
 
