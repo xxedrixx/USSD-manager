@@ -12,11 +12,15 @@
 
     const dispatch = createEventDispatcher();
 
-    const categories = [
-        { id: "ALL", icon: "home", label: "General" },
-        { id: "SMS", icon: "sms", label: "SMS" },
-        { id: "CALL", icon: "call", label: "Appel" },
-        { id: "INTERNET", icon: "wifi", label: "Data" },
+    $: categories = [
+        { id: "ALL", icon: "home", label: $T.categories?.all || "General" },
+        { id: "SMS", icon: "sms", label: $T.categories?.sms || "SMS" },
+        { id: "CALL", icon: "call", label: $T.categories?.call || "Call" },
+        {
+            id: "INTERNET",
+            icon: "wifi",
+            label: $T.categories?.internet || "Data",
+        },
     ];
 
     function close() {
@@ -78,7 +82,7 @@
             </div>
 
             <div class="form-group">
-                <label for="category">Category</label>
+                <label for="category">{$T.category || "Category"}</label>
                 <div class="category-grid">
                     {#each categories as cat}
                         <button

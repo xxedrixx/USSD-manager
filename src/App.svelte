@@ -29,12 +29,20 @@
         category: "ALL",
     };
 
-    const categories = [
-        { id: "ALL", icon: "home", label: "General" },
-        { id: "SMS", icon: "sms", label: "SMS" },
-        { id: "CALL", icon: "call", label: "Appel" },
-        { id: "INTERNET", icon: "wifi", label: "Data" },
-        { id: "FAVORITES", icon: "favorite", label: "Favs" },
+    $: categories = [
+        { id: "ALL", icon: "home", label: $T.categories?.all || "General" },
+        { id: "SMS", icon: "sms", label: $T.categories?.sms || "SMS" },
+        { id: "CALL", icon: "call", label: $T.categories?.call || "Call" },
+        {
+            id: "INTERNET",
+            icon: "wifi",
+            label: $T.categories?.internet || "Data",
+        },
+        {
+            id: "FAVORITES",
+            icon: "favorite",
+            label: $T.categories?.favorites || "Favs",
+        },
     ];
 
     onMount(async () => {
@@ -203,16 +211,20 @@
         {#if codes.length === 0}
             <div class="empty-state">
                 <span class="material-symbols-outlined large">inventory_2</span>
-                <p>No codes added yet.</p>
+                <p>{$T.no_codes_added || "No codes added yet."}</p>
                 <button
                     class="m3-button m3-button-primary"
-                    on:click={openAddModal}>Add Your First Code</button
+                    on:click={openAddModal}
                 >
+                    {$T.add_first_code || "Add Your First Code"}
+                </button>
             </div>
         {:else if filteredCodes.length === 0}
             <div class="empty-state">
                 <span class="material-symbols-outlined large">search_off</span>
-                <p>No codes found for this category.</p>
+                <p>
+                    {$T.no_codes_found || "No codes found for this category."}
+                </p>
             </div>
         {:else}
             <div class="grid">

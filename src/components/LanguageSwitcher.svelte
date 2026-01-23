@@ -3,14 +3,24 @@
 </script>
 
 <div class="language-switcher">
-    <button class:active={$locale === "fr"} on:click={() => setLocale("fr")}>
+    <button
+        class:active={$locale === "fr"}
+        on:click={() => setLocale("fr")}
+        aria-label="Français"
+        title="Français"
+    >
         <svg class="flag" viewBox="0 0 3 2" width="24" height="16">
             <rect width="1" height="2" fill="#002395" />
             <rect width="1" height="2" x="1" fill="#fff" />
             <rect width="1" height="2" x="2" fill="#ED2939" />
         </svg>
     </button>
-    <button class:active={$locale === "mg"} on:click={() => setLocale("mg")}>
+    <button
+        class:active={$locale === "mg"}
+        on:click={() => setLocale("mg")}
+        aria-label="Malagasy"
+        title="Malagasy"
+    >
         <svg class="flag" viewBox="0 0 3 2" width="24" height="16">
             <rect width="1" height="2" fill="#fff" />
             <rect width="2" height="1" x="1" fill="#FC3D32" />
