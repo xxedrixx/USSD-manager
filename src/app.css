@@ -1,33 +1,68 @@
 :root {
-    --primary-color: #6200ea;
-    --secondary-color: #03dac6;
-    --background-color: #ffffff;
-    --surface-color: #ffffff;
-    --error-color: #b00020;
-    --on-primary: #ffffff;
-    --on-secondary: #000000;
-    --on-background: #000000;
-    --on-surface: #000000;
-    --on-error: #ffffff;
+    /* M3 Light Palette */
+    --md-sys-color-primary: #6750A4;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #EADDFF;
+    --md-sys-color-on-primary-container: #21005D;
+    --md-sys-color-secondary: #625B71;
+    --md-sys-color-on-secondary: #FFFFFF;
+    --md-sys-color-secondary-container: #E8DEF8;
+    --md-sys-color-on-secondary-container: #1D192B;
+    --md-sys-color-tertiary: #7D5260;
+    --md-sys-color-on-tertiary: #FFFFFF;
+    --md-sys-color-tertiary-container: #FFD8E4;
+    --md-sys-color-on-tertiary-container: #31111D;
+    --md-sys-color-error: #B3261E;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #F9DEDC;
+    --md-sys-color-on-error-container: #410E0B;
+    --md-sys-color-background: #FFFBFE;
+    --md-sys-color-on-background: #1C1B1F;
+    --md-sys-color-surface: rgba(255, 251, 254, 0.7);
+    --md-sys-color-on-surface: #1C1B1F;
+    --md-sys-color-surface-variant: rgba(231, 224, 236, 0.7);
+    --md-sys-color-on-surface-variant: #49454F;
+    --md-sys-color-outline: #79747E;
 
-    --font-family: 'Roboto', sans-serif;
-    --radius: 8px;
-    --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    --elevation-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    --font-family: 'Inter', 'Roboto', sans-serif;
+    --radius-xs: 4px;
+    --radius-s: 8px;
+    --radius-m: 12px;
+    --radius-l: 16px;
+    --radius-xl: 28px;
+
+    --glass-blur: blur(12px);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --primary-color: #bb86fc;
-        --secondary-color: #03dac6;
-        --background-color: #121212;
-        --surface-color: #1e1e1e;
-        --error-color: #cf6679;
-        --on-primary: #000000;
-        --on-secondary: #000000;
-        --on-background: #ffffff;
-        --on-surface: #ffffff;
-        --on-error: #000000;
+        /* M3 Dark Palette */
+        --md-sys-color-primary: #D0BCFF;
+        --md-sys-color-on-primary: #381E72;
+        --md-sys-color-primary-container: #4F378B;
+        --md-sys-color-on-primary-container: #EADDFF;
+        --md-sys-color-secondary: #CCC2DC;
+        --md-sys-color-on-secondary: #332D41;
+        --md-sys-color-secondary-container: #4A4458;
+        --md-sys-color-on-secondary-container: #E8DEF8;
+        --md-sys-color-tertiary: #EFB8C8;
+        --md-sys-color-on-tertiary: #492532;
+        --md-sys-color-tertiary-container: #633B48;
+        --md-sys-color-on-tertiary-container: #FFD8E4;
+        --md-sys-color-error: #F2B8B5;
+        --md-sys-color-on-error: #601410;
+        --md-sys-color-error-container: #8C1D18;
+        --md-sys-color-on-error-container: #F9DEDC;
+        --md-sys-color-background: #1C1B1F;
+        --md-sys-color-on-background: #E6E1E5;
+        --md-sys-color-surface: rgba(28, 27, 31, 0.7);
+        --md-sys-color-on-surface: #E6E1E5;
+        --md-sys-color-surface-variant: rgba(73, 69, 79, 0.7);
+        --md-sys-color-on-surface-variant: #CAC4D0;
+        --md-sys-color-outline: #938F99;
+
+        --glass-border: 1px solid rgba(255, 255, 255, 0.1);
     }
 }
 
@@ -35,14 +70,46 @@ body {
     margin: 0;
     padding: 0;
     font-family: var(--font-family);
-    background-color: var(--background-color);
-    color: var(--on-background);
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
     -webkit-font-smoothing: antialiased;
-    padding-top: env(safe-area-inset-top);
+    min-height: 100vh;
 }
 
 * {
     box-sizing: border-box;
+}
+
+.glass {
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+}
+
+.m3-card {
+    background-color: var(--md-sys-color-surface);
+    border-radius: var(--radius-m);
+    padding: 16px;
+    color: var(--md-sys-color-on-surface);
+}
+
+.m3-button {
+    border-radius: var(--radius-xl);
+    padding: 10px 24px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.m3-button-primary {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+
+.m3-button-secondary {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
 }
 
 h1,

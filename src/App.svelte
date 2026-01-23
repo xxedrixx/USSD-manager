@@ -6,16 +6,11 @@
     import USSDCard from "./components/USSDCard.svelte";
     import AddCodeModal from "./components/AddCodeModal.svelte";
     import ExecutionDialog from "./components/ExecutionDialog.svelte";
-    import CarrierTabs from "./components/CarrierTabs.svelte";
     import LanguageSwitcher from "./components/LanguageSwitcher.svelte";
-    import PromptModal from "./components/PromptModal.svelte";
     import ConfirmModal from "./components/ConfirmModal.svelte";
 
     let codes = [];
-    let carriers = [];
-    let folders = [];
-
-    let selectedCarrierId = 1;
+    let selectedCategory = "ALL";
 
     let isModalOpen = false;
     let isEditMode = false;
@@ -23,11 +18,6 @@
     let executionCode = "";
 
     // Dialog States
-    let isPromptOpen = false;
-    let promptTitle = "";
-    let promptCallback = null;
-    let promptValue = "";
-
     let isConfirmOpen = false;
     let confirmTitle = "";
     let confirmMessage = "";
@@ -36,66 +26,39 @@
     let currentCode = {
         title: "",
         code: "",
-        carrierId: 1,
-        folderId: 1,
-        contactName: "",
-        contactNumber: "",
+        category: "ALL",
     };
+
+    const categories = [
+        { id: "ALL", icon: "home", label: "All" },
+        { id: "SMS", icon: "sms", label: "SMS" },
+        { id: "CALL", icon: "call", label: "Call" },
+        { id: "INTERNET", icon: "language_us_phone", label: "Data" },
+        { id: "FAVORITES", icon: "star", label: "Favs" },
+    ];
 
     onMount(async () => {
         const initialized = await dbService.init();
         if (initialized) {
             await refreshData();
-            if (carriers.length > 0) selectedCarrierId = carriers[0].id;
         }
     });
 
     async function refreshData() {
-        carriers = await dbService.getCarriers();
-        folders = await dbService.getFolders();
         codes = await dbService.getCodes();
     }
 
-    function handleCarrierSelect(event) {
-        selectedCarrierId = event.detail;
-    }
-
-    function handleAddCarrier() {
-        promptTitle = $T.add_carrier || "Carrier Name:";
-        promptValue = "";
-        promptCallback = async (name) => {
-            if (name) {
-                await dbService.addCarrier(name);
-                await refreshData();
-                if (carriers.length > 0)
-                    selectedCarrierId = carriers[carriers.length - 1].id;
-            }
-        };
-        isPromptOpen = true;
-    }
-
-    function handleRemoveCarrier(event) {
-        const id = event.detail;
-        confirmTitle = $T.delete || "Delete";
-        confirmMessage = $T.confirm_delete || "Delete this carrier?";
-        confirmCallback = async () => {
-            await dbService.deleteCarrier(id);
-            await refreshData();
-            if (selectedCarrierId === id) {
-                selectedCarrierId = carriers[0]?.id || null;
-            }
-        };
-        isConfirmOpen = true;
+    function handleCategorySelect(id) {
+        selectedCategory = id;
     }
 
     function openAddModal() {
+        isEditMode = false;
         currentCode = {
             title: "",
             code: "",
-            carrierId: selectedCarrierId,
-            folderId: folders.length > 0 ? folders[0].id : null,
-            contactName: "",
-            contactNumber: "",
+            category:
+                selectedCategory === "FAVORITES" ? "ALL" : selectedCategory,
         };
         isModalOpen = true;
     }
@@ -113,20 +76,10 @@
                 data.id,
                 data.title,
                 data.code,
-                data.carrierId,
-                data.folderId,
-                data.contactName,
-                data.contactNumber,
+                data.category,
             );
         } else {
-            await dbService.addCode(
-                data.title,
-                data.code,
-                data.carrierId,
-                data.folderId,
-                data.contactName,
-                data.contactNumber,
-            );
+            await dbService.addCode(data.title, data.code, data.category);
         }
         isModalOpen = false;
         await refreshData();
@@ -136,6 +89,17 @@
         const code = event.detail;
         await dbService.toggleFavorite(code.id, !code.is_favorite);
         await refreshData();
+    }
+
+    async function handleDelete(event) {
+        const id = event.detail;
+        confirmTitle = $T.delete || "Delete";
+        confirmMessage = $T.confirm_delete || "Delete this code?";
+        confirmCallback = async () => {
+            await dbService.deleteCode(id);
+            await refreshData();
+        };
+        isConfirmOpen = true;
     }
 
     function handleDial(event) {
@@ -151,12 +115,22 @@
         }
     }
 
-    function performDial(codeStr) {
-        let target = codeStr;
-        if (codeStr.includes("#")) {
-            target = codeStr.replace(/#/g, "%23");
+    async function performDial(codeStr) {
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const { CallNumber } = await import("capacitor-call-number");
+                await CallNumber.call({
+                    number: codeStr,
+                    bypassAppChooser: true,
+                });
+            } catch (err) {
+                console.error("Dial failed", err);
+                // Fallback
+                window.location.href = `tel:${codeStr.replace(/#/g, "%23")}`;
+            }
+        } else {
+            window.location.href = `tel:${codeStr.replace(/#/g, "%23")}`;
         }
-        window.location.href = `tel:${target}`;
         isExecutionOpen = false;
     }
 
@@ -170,85 +144,83 @@
         const matchesSearch =
             c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             c.code.includes(searchQuery);
-        const matchesCarrier = c.carrier_id === selectedCarrierId;
-        return matchesSearch && matchesCarrier;
-    });
 
-    $: groupedCodes = [
-        ...folders.map((folder) => ({
-            ...folder,
-            codes: filteredCodes.filter((c) => c.folder_id === folder.id),
-        })),
-        {
-            id: "unsorted",
-            name: $T.no_folder,
-            codes: filteredCodes.filter((c) => !c.folder_id),
-        },
-    ].filter((group) => group.codes.length > 0);
+        const matchesCategory =
+            selectedCategory === "ALL" ||
+            (selectedCategory === "FAVORITES"
+                ? c.is_favorite
+                : c.category === selectedCategory);
+
+        return matchesSearch && matchesCategory;
+    });
 </script>
 
 <main>
-    <header>
+    <header class="glass">
         <div class="header-top">
-            <h1>{$T.app_title}</h1>
+            <h1>{$T.app_title || "USSD Manager"}</h1>
             <LanguageSwitcher />
         </div>
-        <div class="search-bar">
+        <div class="search-bar m3-card glass">
+            <span class="material-symbols-outlined">search</span>
             <input
                 type="text"
-                placeholder={$T.search_placeholder}
+                placeholder={$T.search_placeholder || "Search codes..."}
                 bind:value={searchQuery}
             />
         </div>
     </header>
 
-    <CarrierTabs
-        {carriers}
-        {selectedCarrierId}
-        on:select={handleCarrierSelect}
-        on:add={handleAddCarrier}
-        on:remove={handleRemoveCarrier}
-    />
-
     <div class="content">
-        {#if codes.length === 0 && carriers.length === 0}
-            <div class="empty-state"><p>Loading...</p></div>
-        {:else if groupedCodes.length === 0}
+        {#if codes.length === 0}
             <div class="empty-state">
-                <p>No codes found for this carrier.</p>
-                <button class="text-btn" on:click={openAddModal}
-                    >Add New Code</button
+                <span class="material-symbols-outlined large">inventory_2</span>
+                <p>No codes added yet.</p>
+                <button
+                    class="m3-button m3-button-primary"
+                    on:click={openAddModal}>Add Your First Code</button
                 >
             </div>
-        {/if}
-
-        {#each groupedCodes as group}
-            <div class="group">
-                <h2 class="group-title" style="color: #666">
-                    <span style="margin-right:8px;">{group.icon || ""}</span>
-                    {group.name}
-                </h2>
-
-                {#each group.codes as code}
+        {:else if filteredCodes.length === 0}
+            <div class="empty-state">
+                <span class="material-symbols-outlined large">search_off</span>
+                <p>No codes found for this category.</p>
+            </div>
+        {:else}
+            <div class="grid">
+                {#each filteredCodes as code (code.id)}
                     <USSDCard
                         {code}
                         on:dial={handleDial}
                         on:favorite={handleFavorite}
                         on:edit={() => openEditModal(code)}
+                        on:delete={handleDelete}
                     />
                 {/each}
             </div>
-        {/each}
+        {/if}
     </div>
 
-    <button class="fab" on:click={openAddModal}>+</button>
+    <button class="fab m3-button-primary glass" on:click={openAddModal}>
+        <span class="material-symbols-outlined">add</span>
+    </button>
+
+    <nav class="bottom-island glass">
+        {#each categories as cat}
+            <button
+                class="nav-item {selectedCategory === cat.id ? 'active' : ''}"
+                on:click={() => handleCategorySelect(cat.id)}
+            >
+                <span class="material-symbols-outlined">{cat.icon}</span>
+                <span class="label">{cat.label}</span>
+            </button>
+        {/each}
+    </nav>
 
     <AddCodeModal
         isOpen={isModalOpen}
         editMode={isEditMode}
         codeData={currentCode}
-        {carriers}
-        {folders}
         on:close={() => (isModalOpen = false)}
         on:save={handleSave}
     />
@@ -258,17 +230,6 @@
         code={executionCode}
         on:close={() => (isExecutionOpen = false)}
         on:execute={onExecute}
-    />
-
-    <PromptModal
-        isOpen={isPromptOpen}
-        title={promptTitle}
-        bind:value={promptValue}
-        on:close={() => (isPromptOpen = false)}
-        on:confirm={(e) => {
-            if (promptCallback) promptCallback(e.detail);
-            isPromptOpen = false;
-        }}
     />
 
     <ConfirmModal
@@ -284,79 +245,147 @@
 </main>
 
 <style>
+    main {
+        padding-bottom: 100px; /* Space for bottom island */
+    }
+
     header {
-        background-color: var(--primary-color);
-        color: var(--on-primary);
         padding: 16px;
-        padding-top: env(safe-area-inset-top, 20px);
-        box-shadow: var(--elevation-2);
+        padding-top: calc(16px + env(safe-area-inset-top, 0px));
         position: sticky;
         top: 0;
         z-index: 100;
+        background-color: var(--md-sys-color-background);
+        border-bottom: var(--glass-border);
     }
 
     .header-top {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
     h1 {
-        margin: 0;
-        font-size: 1.25rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--md-sys-color-primary);
+    }
+
+    .search-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        border-radius: var(--radius-xl);
+    }
+
+    .search-bar input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: var(--md-sys-color-on-surface);
+        font-size: 1rem;
+        outline: none;
     }
 
     .content {
         padding: 16px;
-        padding-bottom: 80px;
     }
 
-    .group-title {
-        font-size: 1rem;
-        margin: 16px 0 8px 0;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    .grid {
+        display: flex;
+        flex-direction: column;
     }
 
     .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 64px 32px;
         text-align: center;
-        color: #999;
-        margin-top: 40px;
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .large {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
     }
 
     .fab {
         position: fixed;
-        bottom: 24px;
+        bottom: 100px;
         right: 24px;
         width: 56px;
         height: 56px;
-        border-radius: 50%;
-        background: var(--secondary-color);
-        color: var(--on-secondary);
-        border: none;
-        font-size: 2rem;
-        box-shadow: var(--elevation-2);
+        border-radius: 16px;
         display: flex;
         justify-content: center;
         align-items: center;
-        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         z-index: 90;
-        padding-bottom: 5px; /* Adjust alignment */
+        border: none;
+        cursor: pointer;
+        padding: 0;
     }
 
-    .fab:active {
-        transform: scale(0.95);
+    .fab .material-symbols-outlined {
+        font-size: 28px;
+        color: var(--md-sys-color-on-primary);
     }
 
-    .text-btn {
+    .bottom-island {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 48px);
+        max-width: 450px;
+        height: 64px;
+        background-color: var(--md-sys-color-surface);
+        border-radius: var(--radius-xl);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 8px;
+        z-index: 1000;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-item {
         background: none;
         border: none;
-        color: var(--primary-color);
-        font-weight: bold;
-        font-size: 1rem;
-        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        color: var(--md-sys-color-on-surface-variant);
         cursor: pointer;
+        flex: 1;
+        transition: color 0.2s;
+        padding: 8px 0;
+    }
+
+    .nav-item.active {
+        color: var(--md-sys-color-primary);
+    }
+
+    .nav-item .material-symbols-outlined {
+        font-variation-settings:
+            "FILL" 0,
+            "wght" 400;
+    }
+
+    .nav-item.active .material-symbols-outlined {
+        font-variation-settings:
+            "FILL" 1,
+            "wght" 400;
+    }
+
+    .label {
+        font-size: 0.7rem;
+        font-weight: 500;
     }
 </style>

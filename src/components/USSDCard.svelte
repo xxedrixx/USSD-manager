@@ -16,10 +16,14 @@
     function handleEdit() {
         dispatch("edit", code);
     }
+
+    function handleDelete() {
+        dispatch("delete", code.id);
+    }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="card">
+<div class="m3-card glass card">
     <div class="header">
         <div
             class="info"
@@ -37,11 +41,25 @@
             <button
                 class="icon-btn {code.is_favorite ? 'active' : ''}"
                 on:click|stopPropagation={handleFavorite}
+                title="Favorite"
             >
-                ★
+                <span class="material-symbols-outlined">
+                    {code.is_favorite ? "star" : "star"}
+                </span>
             </button>
-            <button class="icon-btn" on:click|stopPropagation={handleEdit}>
-                ✎
+            <button
+                class="icon-btn"
+                on:click|stopPropagation={handleEdit}
+                title="Edit"
+            >
+                <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button
+                class="icon-btn delete-btn"
+                on:click|stopPropagation={handleDelete}
+                title="Delete"
+            >
+                <span class="material-symbols-outlined">delete</span>
             </button>
         </div>
     </div>
@@ -49,17 +67,16 @@
 
 <style>
     .card {
-        background: var(--surface-color);
-        border-radius: var(--radius);
-        padding: 16px;
         margin-bottom: 12px;
-        box-shadow: var(--elevation-1);
-        transition: transform 0.1s;
+        transition:
+            transform 0.1s,
+            background-color 0.2s;
         cursor: pointer;
     }
 
     .card:active {
         transform: scale(0.98);
+        background-color: var(--md-sys-color-surface-variant);
     }
 
     .header {
@@ -70,38 +87,51 @@
 
     .info h3 {
         margin: 0;
-        font-size: 1.1rem;
-        color: var(--on-surface);
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--md-sys-color-on-surface);
     }
 
     .ussd-code {
         display: block;
         margin-top: 4px;
-        color: var(--primary-color);
-        font-weight: bold;
-        font-size: 0.9rem;
+        color: var(--md-sys-color-primary);
+        font-weight: 500;
+        font-size: 0.85rem;
+        font-family: monospace;
     }
 
     .actions {
         display: flex;
-        gap: 8px;
+        gap: 4px;
     }
 
     .icon-btn {
         background: none;
         border: none;
-        font-size: 1.2rem;
-        color: #999;
+        color: var(--md-sys-color-on-surface-variant);
         cursor: pointer;
         padding: 8px;
-    }
-
-    .icon-btn.active {
-        color: #ffc107;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
     }
 
     .icon-btn:hover {
-        background: #f0f0f0;
-        border-radius: 50%;
+        background-color: var(--md-sys-color-surface-variant);
+    }
+
+    .icon-btn.active {
+        color: #ffb300; /* M3 Gold-ish for stars */
+    }
+
+    .delete-btn:hover {
+        color: var(--md-sys-color-error);
+    }
+
+    .material-symbols-outlined {
+        font-size: 20px;
     }
 </style>

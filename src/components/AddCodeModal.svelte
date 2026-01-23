@@ -7,9 +7,17 @@
     export let codeData = {
         title: "",
         code: "",
+        category: "ALL",
     };
 
     const dispatch = createEventDispatcher();
+
+    const categories = [
+        { id: "ALL", icon: "home", label: "General" },
+        { id: "SMS", icon: "sms", label: "SMS" },
+        { id: "CALL", icon: "call", label: "Call" },
+        { id: "INTERNET", icon: "language_us_phone", label: "Data" },
+    ];
 
     function close() {
         dispatch("close");
@@ -28,7 +36,6 @@
 <svelte:window on:keydown={handleKeydown} />
 
 {#if isOpen}
-    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
     <div
         class="modal-backdrop"
         on:click={close}
@@ -39,21 +46,29 @@
         }}
     >
         <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <div class="modal" on:click|stopPropagation role="document">
-            <h2>{editMode ? $T.edit_code : $T.add_code}</h2>
+        <div
+            class="m3-card glass modal"
+            on:click|stopPropagation
+            role="document"
+        >
+            <h2>
+                {editMode
+                    ? $T.edit_code || "Edit Code"
+                    : $T.add_code || "Add Code"}
+            </h2>
 
             <div class="form-group">
-                <label for="title">{$T.title}</label>
+                <label for="title">{$T.title || "Name"}</label>
                 <input
                     id="title"
                     type="text"
                     bind:value={codeData.title}
-                    placeholder={$T.title}
+                    placeholder="e.g. Check Balance"
                 />
             </div>
 
             <div class="form-group">
-                <label for="code">{$T.ussd_code}</label>
+                <label for="code">{$T.ussd_code || "USSD Code"}</label>
                 <input
                     id="code"
                     type="tel"
@@ -62,9 +77,32 @@
                 />
             </div>
 
+            <div class="form-group">
+                <label for="category">Category</label>
+                <div class="category-grid">
+                    {#each categories as cat}
+                        <button
+                            class="cat-chip {codeData.category === cat.id
+                                ? 'active'
+                                : ''}"
+                            on:click={() => (codeData.category = cat.id)}
+                        >
+                            <span class="material-symbols-outlined"
+                                >{cat.icon}</span
+                            >
+                            <span>{cat.label}</span>
+                        </button>
+                    {/each}
+                </div>
+            </div>
+
             <div class="actions">
-                <button class="cancel-btn" on:click={close}>{$T.cancel}</button>
-                <button class="save-btn" on:click={save}>{$T.save}</button>
+                <button class="m3-button m3-button-secondary" on:click={close}
+                    >{$T.cancel || "Cancel"}</button
+                >
+                <button class="m3-button m3-button-primary" on:click={save}
+                    >{$T.save || "Save"}</button
+                >
             </div>
         </div>
     </div>
@@ -77,70 +115,98 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000;
+        z-index: 2000;
+        backdrop-filter: blur(4px);
     }
 
     .modal {
-        background: var(--surface-color);
-        padding: 24px;
-        border-radius: var(--radius);
         width: 90%;
         max-width: 400px;
-        box-shadow: var(--elevation-2);
+        padding: 24px;
+        border-radius: var(--radius-xl) !important;
     }
 
     h2 {
-        margin-bottom: 20px;
-        color: var(--primary-color);
+        margin-bottom: 24px;
+        font-size: 1.5rem;
+        color: var(--md-sys-color-on-surface);
     }
 
     .form-group {
-        margin-bottom: 16px;
+        margin-bottom: 20px;
     }
 
     label {
         display: block;
         margin-bottom: 8px;
         font-size: 0.9rem;
-        color: #666;
+        font-weight: 500;
+        color: var(--md-sys-color-on-surface-variant);
     }
 
     input {
         width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        padding: 12px 16px;
+        border: 1px solid var(--md-sys-color-outline);
+        border-radius: var(--radius-m);
         font-size: 1rem;
-        background: var(--background-color);
-        color: var(--on-surface);
+        background: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-on-surface);
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    input:focus {
+        border-color: var(--md-sys-color-primary);
+        border-width: 2px;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .cat-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: var(--radius-m);
+        border: 1px solid var(--md-sys-color-outline);
+        background: none;
+        color: var(--md-sys-color-on-surface-variant);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .cat-chip span {
+        font-size: 0.9rem;
+    }
+
+    .cat-chip.active {
+        background-color: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+        border-color: var(--md-sys-color-primary);
+    }
+
+    .cat-chip .material-symbols-outlined {
+        font-size: 18px;
     }
 
     .actions {
         display: flex;
         justify-content: flex-end;
-        gap: 12px;
-        margin-top: 24px;
+        gap: 8px;
+        margin-top: 32px;
     }
 
-    button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
-    }
-
-    .cancel-btn {
-        background: transparent;
-        color: #666;
-    }
-
-    .save-btn {
-        background: var(--primary-color);
-        color: var(--on-primary);
+    .m3-button {
+        padding: 10px 24px;
+        font-size: 0.9rem;
     }
 </style>
