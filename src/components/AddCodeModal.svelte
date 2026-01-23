@@ -16,7 +16,7 @@
         { id: "ALL", icon: "home", label: "General" },
         { id: "SMS", icon: "sms", label: "SMS" },
         { id: "CALL", icon: "call", label: "Call" },
-        { id: "INTERNET", icon: "language_us_phone", label: "Data" },
+        { id: "INTERNET", icon: "wifi", label: "Data" },
     ];
 
     function close() {
