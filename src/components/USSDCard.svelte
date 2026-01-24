@@ -22,18 +22,15 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="m3-card glass current-card">
+<!-- svelte-ignore a11y-click-events-have-key-events events_have_key_events -->
+<div
+    class="m3-card glass current-card card-actionable"
+    on:click={handleDial}
+    role="button"
+    tabindex="0"
+>
     <div class="header">
-        <div
-            class="info"
-            on:click={handleDial}
-            role="button"
-            tabindex="0"
-            on:keydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleDial();
-            }}
-        >
+        <div class="info">
             <h3>{code.title}</h3>
             <code class="ussd-code">{code.code}</code>
         </div>
@@ -71,19 +68,6 @@
 </div>
 
 <style>
-    .card {
-        margin-bottom: 12px;
-        transition:
-            transform 0.1s,
-            background-color 0.2s;
-        cursor: pointer;
-    }
-
-    .card:active {
-        transform: scale(0.98);
-        background-color: var(--md-sys-color-surface-variant);
-    }
-
     .header {
         display: flex;
         justify-content: space-between;

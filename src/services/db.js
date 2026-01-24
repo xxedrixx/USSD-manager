@@ -58,7 +58,7 @@ class DatabaseService {
         // Ensure default data exists
         const count = await this.db.query("SELECT count(*) as c FROM ussd_codes");
         if (count.values[0].c === 0) {
-            await this.db.run("INSERT INTO ussd_codes (title, code, category) VALUES ('Check Balance', '*123#', 'ALL')");
+            await this.db.run("INSERT INTO ussd_codes (title, code, category) VALUES ('Balance', '*123#', 'ALL')");
         }
     }
 

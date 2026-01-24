@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">USSD</string>
     <string name="title_activity_main">USSD</string>
-    <string name="package_name">com.example.ussd</string>
-    <string name="custom_url_scheme">com.example.ussd</string>
+    <string name="package_name">com.ussd.manager</string>
+    <string name="custom_url_scheme">com.ussd.manager</string>
+    <string name="accessibility_service_description">Automates USSD dialog interactions for a seamless experience.</string>
 </resources>

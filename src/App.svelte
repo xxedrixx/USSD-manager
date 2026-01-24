@@ -8,6 +8,7 @@
     import ExecutionDialog from "./components/ExecutionDialog.svelte";
     import LanguageSwitcher from "./components/LanguageSwitcher.svelte";
     import ConfirmModal from "./components/ConfirmModal.svelte";
+    import { dndzone } from "svelte-dnd-action";
 
     let codes = [];
     let selectedCategory = "ALL";
@@ -110,32 +111,34 @@
         isConfirmOpen = true;
     }
 
-    let draggingId = null;
+    const flipDurationMs = 300;
 
-    function handleDragStart(id) {
-        draggingId = id;
+    function handleDndConsider(e) {
+        codes = e.detail.items;
     }
 
-    async function handleDrop(targetId) {
-        if (!draggingId || draggingId === targetId) return;
+    async function handleDndFinalize(e) {
+        // e.detail.items is the reordered list for the CURRENT category
+        const reorderedFiltered = e.detail.items;
 
-        const draggedIndex = codes.findIndex((c) => c.id === draggingId);
-        const targetIndex = codes.findIndex((c) => c.id === targetId);
+        // Create a copy of all codes to update their order
+        const updatedAllCodes = [...codes];
 
-        if (draggedIndex === -1 || targetIndex === -1) return;
+        // Map the new order from the filtered list back to the global list
+        // This ensures that reordering "Favorites" doesn't delete "SMS" codes
+        reorderedFiltered.forEach((item, index) => {
+            const globalIdx = updatedAllCodes.findIndex(
+                (c) => c.id === item.id,
+            );
+            if (globalIdx !== -1) {
+                // Update the local storage order
+                dbService.updateOrder(item.id, index);
+            }
+        });
 
-        const newCodes = [...codes];
-        const [draggedItem] = newCodes.splice(draggedIndex, 1);
-        newCodes.splice(targetIndex, 0, draggedItem);
-
-        // Update local state first for immediate feedback
-        codes = newCodes;
-        draggingId = null;
-
-        // Persist order to DB
-        for (let i = 0; i < codes.length; i++) {
-            await dbService.updateOrder(codes[i].id, i);
-        }
+        // Update local state and refresh from DB to be safe
+        codes = [...updatedAllCodes];
+        await refreshData();
     }
 
     function handleDial(event) {
@@ -155,14 +158,20 @@
         if (Capacitor.isNativePlatform()) {
             try {
                 const { CallNumber } = await import("capacitor-call-number");
+
+                // USSD codes need to be passed exactly as they are to the plugin
+                // but some Android versions might require encoding.
+                // We'll try direct execution first.
                 await CallNumber.call({
                     number: codeStr,
                     bypassAppChooser: true,
                 });
             } catch (err) {
                 console.error("Dial failed", err);
-                // Fallback
-                window.location.href = `tel:${codeStr.replace(/#/g, "%23")}`;
+
+                // Fallback for USSD is sensitive: # must be %23
+                const encodedCode = codeStr.replace(/#/g, "%23");
+                window.location.href = `tel:${encodedCode}`;
             }
         } else {
             window.location.href = `tel:${codeStr.replace(/#/g, "%23")}`;
@@ -227,17 +236,14 @@
                 </p>
             </div>
         {:else}
-            <div class="grid">
+            <div
+                class="grid"
+                use:dndzone={{ items: filteredCodes, flipDurationMs }}
+                on:consider={handleDndConsider}
+                on:finalize={handleDndFinalize}
+            >
                 {#each filteredCodes as code (code.id)}
-                    <div
-                        draggable="true"
-                        on:dragstart={() => handleDragStart(code.id)}
-                        on:dragover|preventDefault
-                        on:drop={() => handleDrop(code.id)}
-                        class="draggable-wrapper"
-                        class:dragging={draggingId === code.id}
-                        role="listitem"
-                    >
+                    <div class="draggable-wrapper">
                         <USSDCard
                             {code}
                             on:dial={handleDial}
@@ -296,7 +302,7 @@
 
 <style>
     main {
-        padding-bottom: 100px; /* Space for bottom island */
+        padding-bottom: calc(100px + env(safe-area-inset-bottom, 24px));
     }
 
     header {
@@ -370,11 +376,6 @@
         cursor: grabbing;
     }
 
-    .dragging {
-        opacity: 0.5;
-        transform: scale(0.95);
-    }
-
     .empty-state {
         display: flex;
         flex-direction: column;
@@ -393,7 +394,8 @@
 
     .fab {
         position: fixed;
-        bottom: 100px;
+        /* Adjusted to be above the island */
+        bottom: calc(112px + env(safe-area-inset-bottom, 0px));
         right: 20px;
         width: 56px;
         height: 56px;
@@ -415,19 +417,19 @@
 
     .bottom-island {
         position: fixed;
-        bottom: 24px;
+        /* Balanced bottom position */
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
         left: 50%;
         transform: translateX(-50%);
-        width: calc(100% - 48px);
+        width: calc(100% - 40px);
         max-width: 450px;
-        height: 64px;
         background-color: var(--md-sys-color-surface);
         border-radius: var(--radius-xl);
         display: flex;
         justify-content: space-around;
         align-items: center;
-        padding: 0 8px;
-        z-index: 1000;
+        padding: 8px;
+        z-index: 1100; /* Higher than FAB slightly if needed */
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
@@ -443,6 +445,8 @@
         flex: 1;
         transition: color 0.2s;
         padding: 8px 0;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
     }
 
     .nav-item.active {
@@ -464,5 +468,10 @@
     .label {
         font-size: 0.7rem;
         font-weight: 500;
+    }
+
+    /* Suppress dnd focus outline */
+    :global(.grid) {
+        outline: none !important;
     }
 </style>
