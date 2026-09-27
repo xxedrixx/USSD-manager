@@ -1,4 +1,4 @@
-package com.example.ussd;
+package com.ussd.manager;
 
 import com.getcapacitor.BridgeActivity;
 
