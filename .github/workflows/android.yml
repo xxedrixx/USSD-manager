@@ -13,10 +13,11 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     env:
-      # Certificate of the key that signed v1.0. An APK signed with another key
-      # can't be installed over it (people would have to uninstall and lose
-      # their saved codes), so such a release is refused.
-      EXPECTED_CERT_SHA256: 2851ec2e8825971e8c4785db0ba141a1460d7023a0b17421fa8eb62cf7bbf5d2
+      # Certificate of the release key (the ANDROID_KEYSTORE_BASE64 secret).
+      # An APK signed with another key can't be installed over the published
+      # one (people would have to uninstall and lose their saved codes), so
+      # such a release is refused.
+      EXPECTED_CERT_SHA256: e4c5d0182b6663f110f2c90d5cb60df56bb566f9ef095a1d7eef4b45aa0de47a
     steps:
       - uses: actions/checkout@v4
 
@@ -71,7 +72,7 @@ jobs:
           CERT=$("$APKSIGNER" verify --print-certs "$OUT/app-release.apk" | grep -m1 'SHA-256 digest' | awk '{print $NF}')
           echo "Signed with certificate $CERT"
           if [ "$CERT" != "$EXPECTED_CERT_SHA256" ]; then
-            echo "::error::This key is not the one that signed v1.0; the APK would not install over it."
+            echo "::error::Not the release key; the APK would not install over the published one."
             exit 1
           fi
           cp "$OUT/app-release.apk" ussd-manager.apk

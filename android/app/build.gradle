@@ -18,8 +18,9 @@ android {
     }
     signingConfigs {
         release {
-            // Provided by .github/workflows/android.yml. The defaults are those
-            // of an Android debug keystore, which signed v1.0.
+            // Provided by .github/workflows/android.yml from the
+            // ANDROID_KEYSTORE_BASE64 secret; the release keystore uses these
+            // default alias and passwords.
             def keystore = System.getenv("ANDROID_KEYSTORE_FILE")
             if (keystore) {
                 storeFile file(keystore)
