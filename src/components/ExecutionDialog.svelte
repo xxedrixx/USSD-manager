@@ -1,27 +1,56 @@
 <script>
+    // Asks for the placeholder values of a code ({number}, {amount}, ...)
+    // before handing the final code to the dialer. Mounted fresh for every
+    // use, so values from a previous transfer are never reused by accident.
     import { createEventDispatcher } from "svelte";
     import { T } from "../services/i18n";
+    import { carrierFromNumber, getCarrier } from "../lib/carriers";
+    import {
+        fillTemplate,
+        formatAmount,
+        formatNumber,
+        getPlaceholders,
+        normalizeAmount,
+        normalizeNumber,
+        validateValue,
+    } from "../lib/placeholders";
+    import Modal from "./Modal.svelte";
+    import Icon from "./Icon.svelte";
+    import CarrierBadge from "./CarrierBadge.svelte";
+    import CodeText from "./CodeText.svelte";
 
-    export let isOpen = false;
-    export let code = "";
+    export let code; // { title, code, carrier }
 
     const dispatch = createEventDispatcher();
 
-    let variables = [];
-    let values = {};
+    const fields = getPlaceholders(code.code);
+    let raw = Object.fromEntries(fields.map((f) => [f.name, ""]));
+    let submitted = false;
 
-    $: {
-        if (code) {
-            const matches = code.match(/\{([^}]+)\}/g);
-            if (matches) {
-                variables = matches.map((m) => m.slice(1, -1));
-                variables.forEach((v) => {
-                    if (!values[v]) values[v] = "";
-                });
-            } else {
-                variables = [];
-            }
-        }
+    function normalize(kind, value) {
+        if (kind === "number") return normalizeNumber(value);
+        if (kind === "amount") return normalizeAmount(value);
+        return value.trim();
+    }
+
+    $: values = Object.fromEntries(
+        fields.map((f) => [f.name, normalize(f.kind, raw[f.name])]),
+    );
+    $: errors = Object.fromEntries(
+        fields.map((f) => [f.name, validateValue(f.kind, values[f.name])]),
+    );
+    $: isValid = fields.every((f) => !errors[f.name]);
+
+    $: codeCarrier = getCarrier(code.carrier);
+
+    // Digits only, so the field can't break the USSD command.
+    function handleAmountInput(e, name) {
+        raw[name] = normalizeAmount(e.target.value);
+        e.target.value = raw[name];
+    }
+
+    function focusOnMount(node, enabled) {
+        if (enabled) node.focus();
     }
 
     function close() {
@@ -29,96 +58,107 @@
     }
 
     function execute() {
-        let finalCode = code;
-        for (const v of variables) {
-            if (!values[v]) return;
-            finalCode = finalCode.replace(`{${v}}`, values[v]);
-        }
-        dispatch("execute", finalCode);
+        submitted = true;
+        if (!isValid) return;
+        dispatch("execute", fillTemplate(code.code, values));
     }
 </script>
 
-{#if isOpen}
-    <div
-        class="modal-backdrop"
-        on:click={close}
-        role="button"
-        tabindex="0"
-        on:keydown={(e) => {
-            if (e.key === "Enter" || e.key === " ") close();
-        }}
-    >
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <div
-            class="m3-card glass modal"
-            on:click|stopPropagation
-            role="document"
-        >
-            <h2>{$T.enter_details || "Enter Details"}</h2>
-            <p class="preview">{code}</p>
-
-            {#each variables as v}
-                <div class="form-group">
-                    <label for={v}>{v}</label>
-                    <input
-                        id={v}
-                        type={v.toLowerCase().includes("phone")
-                            ? "tel"
-                            : "text"}
-                        bind:value={values[v]}
-                    />
-                </div>
-            {/each}
-
-            <div class="actions">
-                <button class="m3-button m3-button-secondary" on:click={close}
-                    >{$T.cancel || "Cancel"}</button
-                >
-                <button class="m3-button m3-button-primary" on:click={execute}
-                    >{$T.dial || "Dial"}</button
-                >
-            </div>
+<Modal open labelledby="execution-title" on:close={close}>
+    <form on:submit|preventDefault={execute} novalidate>
+        <div class="title-row">
+            <CarrierBadge carrier={code.carrier} />
+            <h2 id="execution-title">{code.title}</h2>
         </div>
-    </div>
-{/if}
+
+        {#each fields as field, i}
+            {@const error = submitted ? errors[field.name] : null}
+            {@const detected =
+                field.kind === "number"
+                    ? carrierFromNumber(values[field.name])
+                    : null}
+            <div class="form-group">
+                <label for="field-{i}"
+                    >{$T.variables?.[field.name] || field.name}</label
+                >
+                {#if field.kind === "amount"}
+                    <div class="amount-input">
+                        <input
+                            id="field-{i}"
+                            type="text"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            value={raw[field.name]}
+                            on:input={(e) => handleAmountInput(e, field.name)}
+                            class:invalid={error}
+                            use:focusOnMount={i === 0}
+                        />
+                        <span class="unit">Ar</span>
+                    </div>
+                    {#if values[field.name]}
+                        <p class="hint">{formatAmount(values[field.name])} Ar</p>
+                    {/if}
+                {:else}
+                    <input
+                        id="field-{i}"
+                        type={field.kind === "number" ? "tel" : "text"}
+                        autocomplete="off"
+                        bind:value={raw[field.name]}
+                        class:invalid={error}
+                        use:focusOnMount={i === 0}
+                    />
+                    {#if detected && codeCarrier && detected.id !== codeCarrier.id}
+                        <p class="warning">
+                            <Icon name="warning" size={16} />
+                            {$T.carrier_mismatch.replace(
+                                "{carrier}",
+                                detected.name,
+                            )}
+                        </p>
+                    {:else if detected}
+                        <p class="hint detected">
+                            <CarrierBadge carrier={detected.id} variant="chip" />
+                            {formatNumber(values[field.name])}
+                        </p>
+                    {/if}
+                {/if}
+                {#if error}
+                    <p class="error">{$T.errors?.[error]}</p>
+                {/if}
+            </div>
+        {/each}
+
+        <div class="preview">
+            <span class="preview-label">{$T.preview || "Preview"}</span>
+            <CodeText code={code.code} {values} />
+        </div>
+        <p class="hint">{$T.dialer_hint}</p>
+
+        <div class="actions">
+            <button
+                type="button"
+                class="m3-button m3-button-secondary"
+                on:click={close}>{$T.cancel || "Cancel"}</button
+            >
+            <button type="submit" class="m3-button m3-button-primary">
+                <Icon name="dialpad" size={18} />
+                {$T.dial || "Dial"}
+            </button>
+        </div>
+    </form>
+</Modal>
 
 <style>
-    .modal-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.4);
+    .title-row {
         display: flex;
-        justify-content: center;
         align-items: center;
-        z-index: 2000;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal {
-        width: 90%;
-        max-width: 400px;
-        padding: 24px;
-        border-radius: var(--radius-xl) !important;
+        gap: 12px;
+        margin-bottom: 20px;
     }
 
     h2 {
-        margin-bottom: 12px;
-        font-size: 1.5rem;
+        font-size: 1.35rem;
         color: var(--md-sys-color-on-surface);
-    }
-
-    .preview {
-        font-family: monospace;
-        background: var(--md-sys-color-surface-variant);
-        padding: 12px;
-        border-radius: var(--radius-m);
-        margin-bottom: 24px;
-        word-break: break-all;
-        color: var(--md-sys-color-on-surface-variant);
-        font-size: 0.9rem;
     }
 
     .form-group {
@@ -131,7 +171,6 @@
         font-size: 0.9rem;
         font-weight: 500;
         color: var(--md-sys-color-on-surface-variant);
-        text-transform: capitalize;
     }
 
     input {
@@ -139,7 +178,7 @@
         padding: 12px 16px;
         border: 1px solid var(--md-sys-color-outline);
         border-radius: var(--radius-m);
-        font-size: 1rem;
+        font-size: 1.1rem;
         background: var(--md-sys-color-background);
         color: var(--md-sys-color-on-surface);
         outline: none;
@@ -150,15 +189,80 @@
         border-width: 2px;
     }
 
+    input.invalid {
+        border-color: var(--md-sys-color-error);
+    }
+
+    .amount-input {
+        position: relative;
+    }
+
+    .amount-input input {
+        padding-right: 48px;
+    }
+
+    .unit {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--md-sys-color-on-surface-variant);
+        font-weight: 500;
+    }
+
+    .hint,
+    .warning,
+    .error {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 6px 0 0;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    .hint {
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .warning {
+        color: #b26a00;
+    }
+
+    .error {
+        color: var(--md-sys-color-error);
+    }
+
+    .preview {
+        margin-top: 20px;
+        padding: 12px;
+        border-radius: var(--radius-m);
+        background: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.95rem;
+    }
+
+    .preview-label {
+        display: block;
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+    }
+
     .actions {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
-        margin-top: 32px;
+        margin-top: 24px;
     }
 
     .m3-button {
         padding: 10px 24px;
         font-size: 0.9rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .warning {
+            color: #ffb74d;
+        }
     }
 </style>

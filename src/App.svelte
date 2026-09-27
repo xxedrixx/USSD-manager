@@ -1,13 +1,15 @@
 <script>
     import { onMount } from "svelte";
-    import { Capacitor } from "@capacitor/core";
     import { dbService } from "./services/db";
-    import { T } from "./services/i18n";
+    import { T, loadLocale } from "./services/i18n";
+    import { hasPlaceholders } from "./lib/placeholders";
+    import { mergeOrder } from "./lib/order";
     import USSDCard from "./components/USSDCard.svelte";
     import AddCodeModal from "./components/AddCodeModal.svelte";
     import ExecutionDialog from "./components/ExecutionDialog.svelte";
     import LanguageSwitcher from "./components/LanguageSwitcher.svelte";
     import ConfirmModal from "./components/ConfirmModal.svelte";
+    import Icon from "./components/Icon.svelte";
     import { dndzone } from "svelte-dnd-action";
 
     let codes = [];
@@ -15,8 +17,8 @@
 
     let isModalOpen = false;
     let isEditMode = false;
-    let isExecutionOpen = false;
-    let executionCode = "";
+    // Code whose placeholders are being filled in, or null.
+    let executionCode = null;
 
     // Dialog States
     let isConfirmOpen = false;
@@ -28,6 +30,7 @@
         title: "",
         code: "",
         category: "ALL",
+        carrier: "",
     };
 
     $: categories = [
@@ -40,6 +43,11 @@
             label: $T.categories?.internet || "Data",
         },
         {
+            id: "MONEY",
+            icon: "payments",
+            label: $T.categories?.money || "Money",
+        },
+        {
             id: "FAVORITES",
             icon: "favorite",
             label: $T.categories?.favorites || "Favs",
@@ -47,6 +55,7 @@
     ];
 
     onMount(async () => {
+        loadLocale();
         const initialized = await dbService.init();
         if (initialized) {
             await refreshData();
@@ -68,13 +77,14 @@
             code: "",
             category:
                 selectedCategory === "FAVORITES" ? "ALL" : selectedCategory,
+            carrier: "",
         };
         isModalOpen = true;
     }
 
     function openEditModal(code) {
         isEditMode = true;
-        currentCode = { ...code };
+        currentCode = { ...code, carrier: code.carrier || "" };
         isModalOpen = true;
     }
 
@@ -86,9 +96,15 @@
                 data.title,
                 data.code,
                 data.category,
+                data.carrier,
             );
         } else {
-            await dbService.addCode(data.title, data.code, data.category);
+            await dbService.addCode(
+                data.title,
+                data.code,
+                data.category,
+                data.carrier,
+            );
         }
         isModalOpen = false;
         await refreshData();
@@ -111,72 +127,50 @@
         isConfirmOpen = true;
     }
 
+    // Forget the pending action so it can't run after the dialog is gone.
+    function closeConfirm() {
+        isConfirmOpen = false;
+        confirmCallback = null;
+    }
+
+    async function handleConfirm() {
+        const callback = confirmCallback;
+        closeConfirm();
+        if (callback) await callback();
+    }
+
     const flipDurationMs = 300;
 
+    // The drag zone works on the visible (filtered) list; `codes` keeps the
+    // full list so other categories are never touched by a drag.
+    let dndItems = [];
+    $: dndItems = filteredCodes;
+
     function handleDndConsider(e) {
-        codes = e.detail.items;
+        dndItems = e.detail.items;
     }
 
     async function handleDndFinalize(e) {
-        // e.detail.items is the reordered list for the CURRENT category
-        const reorderedFiltered = e.detail.items;
-
-        // Create a copy of all codes to update their order
-        const updatedAllCodes = [...codes];
-
-        // Map the new order from the filtered list back to the global list
-        // This ensures that reordering "Favorites" doesn't delete "SMS" codes
-        reorderedFiltered.forEach((item, index) => {
-            const globalIdx = updatedAllCodes.findIndex(
-                (c) => c.id === item.id,
-            );
-            if (globalIdx !== -1) {
-                // Update the local storage order
-                dbService.updateOrder(item.id, index);
-            }
-        });
-
-        // Update local state and refresh from DB to be safe
-        codes = [...updatedAllCodes];
+        dndItems = e.detail.items;
+        codes = mergeOrder(codes, e.detail.items);
+        await dbService.saveOrder(codes.map((c) => c.id));
         await refreshData();
     }
 
     function handleDial(event) {
-        const code = event.detail.code || event.detail;
-        const codeObj = typeof code === "string" ? { code: code } : code;
-        let codeStr = codeObj.code;
-
-        if (codeStr.includes("{") && codeStr.includes("}")) {
-            executionCode = codeStr;
-            isExecutionOpen = true;
+        const code = event.detail;
+        if (hasPlaceholders(code.code)) {
+            executionCode = code;
         } else {
-            performDial(codeStr);
+            performDial(code.code);
         }
     }
 
-    async function performDial(codeStr) {
-        if (Capacitor.isNativePlatform()) {
-            try {
-                const { CallNumber } = await import("capacitor-call-number");
-
-                // USSD codes need to be passed exactly as they are to the plugin
-                // but some Android versions might require encoding.
-                // We'll try direct execution first.
-                await CallNumber.call({
-                    number: codeStr,
-                    bypassAppChooser: true,
-                });
-            } catch (err) {
-                console.error("Dial failed", err);
-
-                // Fallback for USSD is sensitive: # must be %23
-                const encodedCode = codeStr.replace(/#/g, "%23");
-                window.location.href = `tel:${encodedCode}`;
-            }
-        } else {
-            window.location.href = `tel:${codeStr.replace(/#/g, "%23")}`;
-        }
-        isExecutionOpen = false;
+    // Opens the phone's dialer with the code typed in; the user presses call.
+    // In a USSD code, # must be sent as %23.
+    function performDial(codeStr) {
+        executionCode = null;
+        window.location.href = `tel:${codeStr.replace(/#/g, "%23")}`;
     }
 
     function onExecute(event) {
@@ -207,7 +201,7 @@
             <LanguageSwitcher />
         </div>
         <div class="search-container m3-card glass">
-            <span class="material-symbols-outlined">search</span>
+            <Icon name="search" />
             <input
                 type="text"
                 placeholder={$T.search_placeholder || "Search..."}
@@ -219,7 +213,7 @@
     <div class="content">
         {#if codes.length === 0}
             <div class="empty-state">
-                <span class="material-symbols-outlined large">inventory_2</span>
+                <span class="large"><Icon name="inventory_2" size={64} /></span>
                 <p>{$T.no_codes_added || "No codes added yet."}</p>
                 <button
                     class="m3-button m3-button-primary"
@@ -230,7 +224,7 @@
             </div>
         {:else if filteredCodes.length === 0}
             <div class="empty-state">
-                <span class="material-symbols-outlined large">search_off</span>
+                <span class="large"><Icon name="search_off" size={64} /></span>
                 <p>
                     {$T.no_codes_found || "No codes found for this category."}
                 </p>
@@ -238,11 +232,15 @@
         {:else}
             <div
                 class="grid"
-                use:dndzone={{ items: filteredCodes, flipDurationMs }}
+                use:dndzone={{
+                    items: dndItems,
+                    flipDurationMs,
+                    delayTouchStart: true,
+                }}
                 on:consider={handleDndConsider}
                 on:finalize={handleDndFinalize}
             >
-                {#each filteredCodes as code (code.id)}
+                {#each dndItems as code (code.id)}
                     <div class="draggable-wrapper">
                         <USSDCard
                             {code}
@@ -257,8 +255,12 @@
         {/if}
     </div>
 
-    <button class="fab m3-button-primary glass" on:click={openAddModal}>
-        <span class="material-symbols-outlined">add</span>
+    <button
+        class="fab m3-button-primary glass"
+        on:click={openAddModal}
+        aria-label={$T.add_code || "Add Code"}
+    >
+        <Icon name="add" size={28} />
     </button>
 
     <nav class="bottom-island glass">
@@ -267,7 +269,7 @@
                 class="nav-item {selectedCategory === cat.id ? 'active' : ''}"
                 on:click={() => handleCategorySelect(cat.id)}
             >
-                <span class="material-symbols-outlined">{cat.icon}</span>
+                <Icon name={cat.icon} filled={selectedCategory === cat.id} />
                 <span class="label">{cat.label}</span>
             </button>
         {/each}
@@ -281,22 +283,20 @@
         on:save={handleSave}
     />
 
-    <ExecutionDialog
-        isOpen={isExecutionOpen}
-        code={executionCode}
-        on:close={() => (isExecutionOpen = false)}
-        on:execute={onExecute}
-    />
+    {#if executionCode}
+        <ExecutionDialog
+            code={executionCode}
+            on:close={() => (executionCode = null)}
+            on:execute={onExecute}
+        />
+    {/if}
 
     <ConfirmModal
         isOpen={isConfirmOpen}
         title={confirmTitle}
         message={confirmMessage}
-        on:close={() => (isConfirmOpen = false)}
-        on:confirm={() => {
-            if (confirmCallback) confirmCallback();
-            isConfirmOpen = false;
-        }}
+        on:close={closeConfirm}
+        on:confirm={handleConfirm}
     />
 </main>
 
@@ -387,7 +387,6 @@
     }
 
     .large {
-        font-size: 64px;
         margin-bottom: 16px;
         opacity: 0.5;
     }
@@ -410,8 +409,7 @@
         padding: 0;
     }
 
-    .fab .material-symbols-outlined {
-        font-size: 28px;
+    .fab {
         color: var(--md-sys-color-on-primary);
     }
 
@@ -451,18 +449,6 @@
 
     .nav-item.active {
         color: var(--md-sys-color-primary);
-    }
-
-    .nav-item .material-symbols-outlined {
-        font-variation-settings:
-            "FILL" 0,
-            "wght" 400;
-    }
-
-    .nav-item.active .material-symbols-outlined {
-        font-variation-settings:
-            "FILL" 1,
-            "wght" 400;
     }
 
     .label {

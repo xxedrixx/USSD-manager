@@ -1,6 +1,17 @@
 <script>
-    import { createEventDispatcher } from "svelte";
+    import { createEventDispatcher, tick } from "svelte";
     import { T } from "../services/i18n";
+    import { carriers } from "../lib/carriers";
+    import {
+        AMOUNT,
+        NUMBER,
+        hasPlaceholders,
+        validateTemplate,
+    } from "../lib/placeholders";
+    import Modal from "./Modal.svelte";
+    import Icon from "./Icon.svelte";
+    import CarrierBadge from "./CarrierBadge.svelte";
+    import CodeText from "./CodeText.svelte";
 
     export let isOpen = false;
     export let editMode = false;
@@ -8,9 +19,16 @@
         title: "",
         code: "",
         category: "ALL",
+        carrier: "",
     };
 
     const dispatch = createEventDispatcher();
+
+    let codeInput;
+    let submitted = false;
+
+    // Show errors only after a first save attempt.
+    $: if (isOpen) submitted = false;
 
     $: categories = [
         { id: "ALL", icon: "home", label: $T.categories?.all || "General" },
@@ -21,119 +39,164 @@
             icon: "wifi",
             label: $T.categories?.internet || "Data",
         },
+        {
+            id: "MONEY",
+            icon: "payments",
+            label: $T.categories?.money || "Money",
+        },
     ];
+
+    $: titleError = codeData.title.trim() ? null : "required";
+    $: codeError = validateTemplate(codeData.code);
 
     function close() {
         dispatch("close");
     }
 
-    function handleKeydown(e) {
-        if (e.key === "Escape") close();
+    // Inserts {number} / {amount} at the cursor: the phone keyboard used for
+    // the code field has no { } keys.
+    async function insertPlaceholder(name) {
+        const token = `{${name}}`;
+        const start = codeInput.selectionStart ?? codeData.code.length;
+        const end = codeInput.selectionEnd ?? start;
+        codeData.code =
+            codeData.code.slice(0, start) + token + codeData.code.slice(end);
+        await tick();
+        codeInput.focus();
+        codeInput.setSelectionRange(
+            start + token.length,
+            start + token.length,
+        );
     }
 
     function save() {
-        if (!codeData.title || !codeData.code) return;
-        dispatch("save", codeData);
+        submitted = true;
+        if (titleError || codeError) return;
+        dispatch("save", {
+            ...codeData,
+            title: codeData.title.trim(),
+            code: codeData.code.trim(),
+        });
     }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<Modal open={isOpen} labelledby="add-code-title" on:close={close}>
+    <form on:submit|preventDefault={save} novalidate>
+        <h2 id="add-code-title">
+            {editMode ? $T.edit_code || "Edit Code" : $T.add_code || "Add Code"}
+        </h2>
 
-{#if isOpen}
-    <div
-        class="modal-backdrop"
-        on:click={close}
-        role="dialog"
-        tabindex="-1"
-        on:keydown={(e) => {
-            if (e.key === "Escape") close();
-        }}
-    >
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <div
-            class="m3-card glass modal"
-            on:click|stopPropagation
-            role="document"
-        >
-            <h2>
-                {editMode
-                    ? $T.edit_code || "Edit Code"
-                    : $T.add_code || "Add Code"}
-            </h2>
+        <div class="form-group">
+            <label for="title">{$T.title || "Name"}</label>
+            <input
+                id="title"
+                type="text"
+                bind:value={codeData.title}
+                placeholder="Solde"
+                class:invalid={submitted && titleError}
+            />
+            {#if submitted && titleError}
+                <p class="error">{$T.errors?.[titleError]}</p>
+            {/if}
+        </div>
 
-            <div class="form-group">
-                <label for="title">{$T.title || "Name"}</label>
-                <input
-                    id="title"
-                    type="text"
-                    bind:value={codeData.title}
-                    placeholder="Solde"
-                />
+        <div class="form-group">
+            <label for="code">{$T.ussd_code || "USSD Code"}</label>
+            <input
+                id="code"
+                type="tel"
+                bind:this={codeInput}
+                bind:value={codeData.code}
+                placeholder="*123#"
+                class:invalid={submitted && codeError}
+            />
+            {#if submitted && codeError}
+                <p class="error">{$T.errors?.[codeError]}</p>
+            {/if}
+            <div class="insert-row">
+                <button
+                    type="button"
+                    class="insert-chip"
+                    on:click={() => insertPlaceholder(NUMBER)}
+                >
+                    <Icon name="add" size={16} />
+                    {$T.variables?.number || "Number"}
+                </button>
+                <button
+                    type="button"
+                    class="insert-chip"
+                    on:click={() => insertPlaceholder(AMOUNT)}
+                >
+                    <Icon name="add" size={16} />
+                    {$T.variables?.amount || "Amount"}
+                </button>
             </div>
-
-            <div class="form-group">
-                <label for="code">{$T.ussd_code || "USSD Code"}</label>
-                <input
-                    id="code"
-                    type="tel"
-                    bind:value={codeData.code}
-                    placeholder="*123#"
-                />
-            </div>
-
-            <div class="form-group">
-                <label for="category">{$T.category || "Category"}</label>
-                <div class="category-grid">
-                    {#each categories as cat}
-                        <button
-                            class="cat-chip {codeData.category === cat.id
-                                ? 'active'
-                                : ''}"
-                            on:click={() => (codeData.category = cat.id)}
-                        >
-                            <span class="material-symbols-outlined"
-                                >{cat.icon}</span
-                            >
-                            <span>{cat.label}</span>
-                        </button>
-                    {/each}
+            {#if !codeError && hasPlaceholders(codeData.code)}
+                <div class="preview">
+                    <span class="preview-label">{$T.preview || "Preview"}</span>
+                    <CodeText code={codeData.code} />
                 </div>
-            </div>
+            {:else}
+                <p class="hint">{$T.placeholder_hint}</p>
+            {/if}
+        </div>
 
-            <div class="actions">
-                <button class="m3-button m3-button-secondary" on:click={close}
-                    >{$T.cancel || "Cancel"}</button
+        <div class="form-group">
+            <span class="label">{$T.carrier || "Carrier"}</span>
+            <div class="chip-row">
+                <button
+                    type="button"
+                    class="cat-chip {!codeData.carrier ? 'active' : ''}"
+                    on:click={() => (codeData.carrier = "")}
                 >
-                <button class="m3-button m3-button-primary" on:click={save}
-                    >{$T.save || "Save"}</button
-                >
+                    {$T.carrier_none || "None"}
+                </button>
+                {#each carriers as carrier}
+                    <button
+                        type="button"
+                        class="cat-chip {codeData.carrier === carrier.id
+                            ? 'active'
+                            : ''}"
+                        on:click={() => (codeData.carrier = carrier.id)}
+                    >
+                        <CarrierBadge carrier={carrier.id} variant="chip" />
+                    </button>
+                {/each}
             </div>
         </div>
-    </div>
-{/if}
+
+        <div class="form-group">
+            <span class="label">{$T.category || "Category"}</span>
+            <div class="category-grid">
+                {#each categories as cat}
+                    <button
+                        type="button"
+                        class="cat-chip {codeData.category === cat.id
+                            ? 'active'
+                            : ''}"
+                        on:click={() => (codeData.category = cat.id)}
+                    >
+                        <Icon name={cat.icon} size={18} />
+                        <span>{cat.label}</span>
+                    </button>
+                {/each}
+            </div>
+        </div>
+
+        <div class="actions">
+            <button
+                type="button"
+                class="m3-button m3-button-secondary"
+                on:click={close}>{$T.cancel || "Cancel"}</button
+            >
+            <button type="submit" class="m3-button m3-button-primary"
+                >{$T.save || "Save"}</button
+            >
+        </div>
+    </form>
+</Modal>
 
 <style>
-    .modal-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.4);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 2000;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal {
-        width: 90%;
-        max-width: 400px;
-        padding: 24px;
-        border-radius: var(--radius-xl) !important;
-    }
-
     h2 {
         margin-bottom: 24px;
         font-size: 1.5rem;
@@ -144,7 +207,8 @@
         margin-bottom: 20px;
     }
 
-    label {
+    label,
+    .label {
         display: block;
         margin-bottom: 8px;
         font-size: 0.9rem;
@@ -169,6 +233,64 @@
         border-width: 2px;
     }
 
+    input.invalid {
+        border-color: var(--md-sys-color-error);
+    }
+
+    .error {
+        margin: 6px 0 0;
+        font-size: 0.8rem;
+        color: var(--md-sys-color-error);
+    }
+
+    .hint {
+        margin: 8px 0 0;
+        font-size: 0.8rem;
+        line-height: 1.4;
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .insert-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .insert-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px 6px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .preview {
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-radius: var(--radius-m);
+        background: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.9rem;
+    }
+
+    .preview-label {
+        display: block;
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+    }
+
+    .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
     .category-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -186,9 +308,6 @@
         color: var(--md-sys-color-on-surface-variant);
         cursor: pointer;
         transition: all 0.2s;
-    }
-
-    .cat-chip span {
         font-size: 0.9rem;
     }
 
@@ -196,10 +315,6 @@
         background-color: var(--md-sys-color-primary-container);
         color: var(--md-sys-color-on-primary-container);
         border-color: var(--md-sys-color-primary);
-    }
-
-    .cat-chip .material-symbols-outlined {
-        font-size: 18px;
     }
 
     .actions {

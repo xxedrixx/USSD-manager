@@ -1,5 +1,8 @@
 <script>
     import { createEventDispatcher } from "svelte";
+    import Icon from "./Icon.svelte";
+    import CarrierBadge from "./CarrierBadge.svelte";
+    import CodeText from "./CodeText.svelte";
 
     export let code;
 
@@ -7,6 +10,10 @@
 
     function handleDial() {
         dispatch("dial", code);
+    }
+
+    function handleKeydown(e) {
+        if (e.target === e.currentTarget && e.key === "Enter") handleDial();
     }
 
     function handleFavorite() {
@@ -22,17 +29,18 @@
     }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events events_have_key_events -->
 <div
     class="m3-card glass current-card card-actionable"
     on:click={handleDial}
+    on:keydown={handleKeydown}
     role="button"
     tabindex="0"
 >
     <div class="header">
+        <CarrierBadge carrier={code.carrier} />
         <div class="info">
             <h3>{code.title}</h3>
-            <code class="ussd-code">{code.code}</code>
+            <div class="ussd-code"><CodeText code={code.code} /></div>
         </div>
         <div class="actions">
             <button
@@ -40,28 +48,21 @@
                 on:click|stopPropagation={handleFavorite}
                 title="Favorite"
             >
-                <span
-                    class="material-symbols-outlined"
-                    style={code.is_favorite
-                        ? "font-variation-settings: 'FILL' 1"
-                        : ""}
-                >
-                    favorite
-                </span>
+                <Icon name="favorite" filled={!!code.is_favorite} size={20} />
             </button>
             <button
                 class="icon-btn"
                 on:click|stopPropagation={handleEdit}
                 title="Edit"
             >
-                <span class="material-symbols-outlined">edit</span>
+                <Icon name="edit" size={20} />
             </button>
             <button
                 class="icon-btn delete-btn"
                 on:click|stopPropagation={handleDelete}
                 title="Delete"
             >
-                <span class="material-symbols-outlined">delete</span>
+                <Icon name="delete" size={20} />
             </button>
         </div>
     </div>
@@ -70,8 +71,13 @@
 <style>
     .header {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        gap: 12px;
+    }
+
+    .info {
+        flex: 1;
+        min-width: 0;
     }
 
     .info h3 {
@@ -82,12 +88,10 @@
     }
 
     .ussd-code {
-        display: block;
         margin-top: 4px;
         color: var(--md-sys-color-primary);
         font-weight: 500;
         font-size: 0.85rem;
-        font-family: monospace;
     }
 
     .actions {
@@ -118,9 +122,5 @@
 
     .delete-btn:hover {
         color: var(--md-sys-color-error);
-    }
-
-    .material-symbols-outlined {
-        font-size: 20px;
     }
 </style>
