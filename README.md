@@ -6,5 +6,6 @@
   <img src="screenshots/withdraw.png" width="250"/>
   <img src="screenshots/dial.png" width="250"/>
   <img src="screenshots/add.png" width="250"/>
+  <img src="screenshots/import.png" width="250"/>
   <img src="screenshots/send-dark.png" width="250"/>
 </p>

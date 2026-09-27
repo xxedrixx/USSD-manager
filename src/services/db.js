@@ -109,6 +109,18 @@ class DatabaseService {
         await this.db.run(INSERT_CODE, [title, code, category || 'ALL', carrier || '']);
     }
 
+    // Adds several codes at the end of the list in one transaction.
+    async addCodes(codes) {
+        if (this.isWeb) {
+            for (const c of codes) await this.addCode(c.title, c.code, c.category, c.carrier);
+            return;
+        }
+        await this.db.executeSet(codes.map(c => ({
+            statement: INSERT_CODE,
+            values: [c.title, c.code, c.category || 'ALL', c.carrier || '']
+        })));
+    }
+
     async updateCode(id, title, code, category, carrier) {
         if (this.isWeb) {
             const index = this.mockData.codes.findIndex(c => c.id === id);

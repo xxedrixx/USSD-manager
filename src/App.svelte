@@ -9,6 +9,7 @@
     import ExecutionDialog from "./components/ExecutionDialog.svelte";
     import LanguageSwitcher from "./components/LanguageSwitcher.svelte";
     import ConfirmModal from "./components/ConfirmModal.svelte";
+    import ImportExportModal from "./components/ImportExportModal.svelte";
     import Icon from "./components/Icon.svelte";
     import { dndzone } from "svelte-dnd-action";
 
@@ -19,6 +20,7 @@
 
     let isModalOpen = false;
     let isEditMode = false;
+    let isTransferOpen = false;
     // Code whose placeholders are being filled in, or null.
     let executionCode = null;
 
@@ -142,6 +144,12 @@
         isConfirmOpen = true;
     }
 
+    async function handleImport(event) {
+        await dbService.addCodes(event.detail);
+        isTransferOpen = false;
+        await refreshData();
+    }
+
     // Forget the pending action so it can't run after the dialog is gone.
     function closeConfirm() {
         isConfirmOpen = false;
@@ -215,7 +223,17 @@
     <header class="glass sticky-header">
         <div class="header-top">
             <h1>{$T.app_title || "USSD"}</h1>
-            <LanguageSwitcher />
+            <div class="header-actions">
+                <button
+                    class="header-btn"
+                    on:click={() => (isTransferOpen = true)}
+                    aria-label={$T.transfer?.title}
+                    title={$T.transfer?.title}
+                >
+                    <Icon name="swap_vert" />
+                </button>
+                <LanguageSwitcher />
+            </div>
         </div>
         <div class="search-container m3-card glass">
             <Icon name="search" />
@@ -323,6 +341,14 @@
         />
     {/if}
 
+    <ImportExportModal
+        isOpen={isTransferOpen}
+        codes={filteredCodes}
+        existing={codes}
+        on:close={() => (isTransferOpen = false)}
+        on:import={handleImport}
+    />
+
     <ConfirmModal
         isOpen={isConfirmOpen}
         title={confirmTitle}
@@ -352,6 +378,25 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .header-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        background: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-on-surface-variant);
+        cursor: pointer;
     }
 
     h1 {
