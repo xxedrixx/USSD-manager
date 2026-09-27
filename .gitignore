@@ -5,8 +5,8 @@ build/
 dist/
 
 # Capacitor
-android/
-ios/
+# android/ is source code (manifest, icons, splash) and stays tracked;
+# its generated build files are ignored by android/.gitignore.
 capacitor.config.json.bak
 
 # IDEs
