@@ -19,7 +19,7 @@
     import CarrierBadge from "./CarrierBadge.svelte";
     import CodeText from "./CodeText.svelte";
 
-    export let code; // { title, code, carrier }
+    export let code; // { title, code, category, carrier }
 
     const dispatch = createEventDispatcher();
 
@@ -41,7 +41,10 @@
     );
     $: isValid = fields.every((f) => !errors[f.name]);
 
-    $: codeCarrier = getCarrier(code.carrier);
+    // A cash point must be on the code's network. Transfers can go to other
+    // networks, so for them the detected network is only shown.
+    const expectedCarrier =
+        code.category === "WITHDRAW" ? getCarrier(code.carrier) : null;
 
     // Digits only, so the field can't break the USSD command.
     function handleAmountInput(e, name) {
@@ -107,7 +110,7 @@
                         class:invalid={error}
                         use:focusOnMount={i === 0}
                     />
-                    {#if detected && codeCarrier && detected.id !== codeCarrier.id}
+                    {#if detected && expectedCarrier && detected.id !== expectedCarrier.id}
                         <p class="warning">
                             <Icon name="warning" size={16} />
                             {$T.carrier_mismatch.replace(

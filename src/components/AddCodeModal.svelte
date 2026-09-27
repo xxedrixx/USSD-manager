@@ -39,10 +39,11 @@
             icon: "wifi",
             label: $T.categories?.internet || "Data",
         },
+        { id: "SEND", icon: "send", label: $T.categories?.send || "Send" },
         {
-            id: "MONEY",
-            icon: "payments",
-            label: $T.categories?.money || "Money",
+            id: "WITHDRAW",
+            icon: "local_atm",
+            label: $T.categories?.withdraw || "Withdraw",
         },
     ];
 

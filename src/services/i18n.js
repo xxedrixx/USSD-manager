@@ -41,6 +41,8 @@ const translations = {
             call: "Appel",
             internet: "Data",
             money: "Money",
+            send: "Envoi",
+            withdraw: "Retrait",
             favorites: "Favoris"
         },
         empty_state: "Aucun code enregistré. Appuyez sur + pour ajouter.",
@@ -91,6 +93,8 @@ const translations = {
             call: "Antso",
             internet: "Data",
             money: "Vola",
+            send: "Mandefa vola",
+            withdraw: "Misintona vola",
             favorites: "Tianao"
         },
         empty_state: "Tsy misy kaody voatahiry. Tsindrio ny + raha hanampy.",

@@ -102,6 +102,12 @@ describe("values", () => {
 });
 
 describe("presets", () => {
+    it("are sorted into send and withdraw", () => {
+        for (const p of presets) {
+            expect(["SEND", "WITHDRAW"]).toContain(p.category);
+        }
+    });
+
     it("are all valid templates asking for a number and an amount", () => {
         for (const p of presets) {
             expect(validateTemplate(p.code)).toBeNull();

@@ -14,6 +14,8 @@
 
     let codes = [];
     let selectedCategory = "ALL";
+    // Inside the Money tab: "SEND" or "WITHDRAW".
+    let moneyCategory = "SEND";
 
     let isModalOpen = false;
     let isEditMode = false;
@@ -32,6 +34,15 @@
         category: "ALL",
         carrier: "",
     };
+
+    $: moneyCategories = [
+        { id: "SEND", icon: "send", label: $T.categories?.send || "Send" },
+        {
+            id: "WITHDRAW",
+            icon: "local_atm",
+            label: $T.categories?.withdraw || "Withdraw",
+        },
+    ];
 
     $: categories = [
         { id: "ALL", icon: "home", label: $T.categories?.all || "General" },
@@ -76,7 +87,11 @@
             title: "",
             code: "",
             category:
-                selectedCategory === "FAVORITES" ? "ALL" : selectedCategory,
+                selectedCategory === "FAVORITES"
+                    ? "ALL"
+                    : selectedCategory === "MONEY"
+                      ? moneyCategory
+                      : selectedCategory,
             carrier: "",
         };
         isModalOpen = true;
@@ -184,11 +199,13 @@
             c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             c.code.includes(searchQuery);
 
-        const matchesCategory =
-            selectedCategory === "ALL" ||
-            (selectedCategory === "FAVORITES"
-                ? c.is_favorite
-                : c.category === selectedCategory);
+        let matchesCategory;
+        if (selectedCategory === "ALL") matchesCategory = true;
+        else if (selectedCategory === "FAVORITES")
+            matchesCategory = !!c.is_favorite;
+        else if (selectedCategory === "MONEY")
+            matchesCategory = c.category === moneyCategory;
+        else matchesCategory = c.category === selectedCategory;
 
         return matchesSearch && matchesCategory;
     });
@@ -211,6 +228,21 @@
     </header>
 
     <div class="content">
+        {#if selectedCategory === "MONEY"}
+            <div class="segmented" role="tablist">
+                {#each moneyCategories as cat}
+                    <button
+                        role="tab"
+                        aria-selected={moneyCategory === cat.id}
+                        class:active={moneyCategory === cat.id}
+                        on:click={() => (moneyCategory = cat.id)}
+                    >
+                        <Icon name={cat.icon} size={18} />
+                        {cat.label}
+                    </button>
+                {/each}
+            </div>
+        {/if}
         {#if codes.length === 0}
             <div class="empty-state">
                 <span class="large"><Icon name="inventory_2" size={64} /></span>
@@ -359,6 +391,37 @@
     .content {
         padding: 16px;
         padding-bottom: 120px; /* Space for bottom island */
+    }
+
+    .segmented {
+        display: flex;
+        padding: 4px;
+        margin-bottom: 16px;
+        border-radius: var(--radius-xl);
+        background: var(--md-sys-color-surface-variant);
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .segmented button {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 12px;
+        border: none;
+        border-radius: var(--radius-xl);
+        background: none;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-standard);
+    }
+
+    .segmented button.active {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
     }
 
     .grid {
